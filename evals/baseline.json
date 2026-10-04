@@ -1,0 +1,294 @@
+{
+  "case_count": 56,
+  "info": {
+    "max_tokens": 4096,
+    "mode": "naive",
+    "model": "claude-haiku-4-5",
+    "price_date": "2026-10-04",
+    "profile": "claude_small",
+    "prompt_version": "sql_naive_v1",
+    "run_date": "2026-10-04"
+  },
+  "results": {
+    "001:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "001:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "002:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "002:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "003:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "003:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "004:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "004:hu": {
+      "lenient": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "005:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "005:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "006:en": {
+      "lenient": true,
+      "status": "answered",
+      "strict": false
+    },
+    "006:hu": {
+      "lenient": true,
+      "status": "answered",
+      "strict": false
+    },
+    "007:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "007:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "008:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "008:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "009:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "009:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "010:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "010:hu": {
+      "lenient": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "011:en": {
+      "lenient": true,
+      "status": "answered",
+      "strict": true
+    },
+    "011:hu": {
+      "lenient": true,
+      "status": "answered",
+      "strict": true
+    },
+    "012:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "012:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "013:en": {
+      "lenient": true,
+      "status": "answered",
+      "strict": true
+    },
+    "013:hu": {
+      "lenient": true,
+      "status": "answered",
+      "strict": true
+    },
+    "014:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "014:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "015:en": {
+      "lenient": true,
+      "status": "answered",
+      "strict": false
+    },
+    "015:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "016:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "016:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "017:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "017:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "018:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "018:hu": {
+      "lenient": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "019:en": {
+      "lenient": true,
+      "status": "answered",
+      "strict": false
+    },
+    "019:hu": {
+      "lenient": true,
+      "status": "answered",
+      "strict": false
+    },
+    "020:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "020:hu": {
+      "lenient": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "021:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "021:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "022:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "022:hu": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "023:en": {
+      "lenient": false,
+      "status": "answered",
+      "strict": false
+    },
+    "023:hu": {
+      "lenient": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "024:en": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    },
+    "024:hu": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    },
+    "025:en": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    },
+    "025:hu": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    },
+    "026:en": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    },
+    "026:hu": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    },
+    "027:en": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    },
+    "027:hu": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    },
+    "028:en": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    },
+    "028:hu": {
+      "lenient": true,
+      "status": "refused",
+      "strict": true
+    }
+  }
+}
