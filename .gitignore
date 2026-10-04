@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Secrets - never commit real keys (see .env.example)
+.env
+
+# Generated data - reproducible with the generator (fixed seed), so not versioned
+data/*.duckdb
+data/*.duckdb.wal
+data/*.parquet
+
+# Evaluation run artifacts - only the summary report and baseline are versioned
+evals/runs/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,36 @@
+# Continuous integration: every push and pull request must pass lint, type
+# checks and unit tests before it can be merged. Unit tests never call an LLM
+# API, so this workflow needs no secrets.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python and dependencies
+        run: |
+          uv python install 3.12
+          uv sync
+
+      - name: Lint and format check
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy
+
+      - name: Unit tests
+        run: uv run pytest
