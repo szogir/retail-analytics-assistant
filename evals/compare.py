@@ -8,7 +8,8 @@ SQL text would punish harmless differences, so the eval compares what the user w
 
 Where it sits in the pipeline: evaluation only (grading step of the eval runner).
 
-Two strictness levels are reported side by side:
+Three strictness levels are reported side by side:
+- primary: extra columns allowed, relative numeric tolerance 1e-6 (data cases only).
 - strict: same number of columns, numbers equal within a relative tolerance of 1e-6.
 - lenient: extra columns are allowed (for example the model also returns the year), and
   numbers may differ by up to 1 percent (a rounding difference is not a wrong answer).
@@ -37,6 +38,7 @@ class Comparison:
 
     strict: bool
     lenient: bool
+    primary: bool = False
 
 
 def _is_number(value: object) -> bool:
@@ -74,17 +76,39 @@ def _tables_equal(
         return False
     if order_sensitive:
         return all(_rows_equal(e, a, rel_tol) for e, a in zip(expected, actual, strict=True))
-    # Unordered: pair every expected row with a still-unused actual row that matches.
+    # Unordered: find a one-to-one match for every expected row.
     # Design note: sorting both tables and comparing row by row would be shorter, but sorting
     # floats that differ in the last digits can put equal rows in different positions.
-    unused = list(actual)
-    for expected_row in expected:
-        for index, candidate in enumerate(unused):
-            if _rows_equal(expected_row, candidate, rel_tol):
-                del unused[index]
-                break
-        else:
+    # Tolerance is not transitive. A greedy match can consume the only candidate
+    # for a later row. Augmenting paths find a complete one-to-one assignment.
+    candidates = [
+        [j for j, row in enumerate(actual) if _rows_equal(expected_row, row, rel_tol)]
+        for expected_row in expected
+    ]
+    owners: dict[int, int] = {}
+    for start in range(len(expected)):
+        pending = [start]
+        visited = {start}
+        parents: dict[int, tuple[int, int]] = {}
+        found: tuple[int, int] | None = None
+        while pending and found is None:
+            left = pending.pop()
+            for right in candidates[left]:
+                owner = owners.get(right)
+                if owner is None:
+                    found = (left, right)
+                    break
+                if owner not in visited:
+                    visited.add(owner)
+                    parents[owner] = (left, right)
+                    pending.append(owner)
+        if found is None:
             return False
+        left, right = found
+        owners[right] = left
+        while left != start:
+            left, right = parents[left]
+            owners[right] = left
     return True
 
 
@@ -134,4 +158,5 @@ def compare_tables(
     return Comparison(
         strict=tables_match(expected, actual, order_sensitive, STRICT_REL_TOL, False),
         lenient=tables_match(expected, actual, order_sensitive, LENIENT_REL_TOL, True),
+        primary=tables_match(expected, actual, order_sensitive, STRICT_REL_TOL, True),
     )
