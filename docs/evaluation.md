@@ -53,6 +53,21 @@ Pending personal-approval tests are xfail; the actual freeze command still rejec
 Development sessions must use `pytest -m 'not live and not review and not holdout'` even
 when they inherit the owner's environment. Lint/type checks do not discover external data.
 
+The owner freezes and verifies the external suite with:
+
+```bash
+uv run python -m evals.validate_suite --suite holdout --freeze
+uv run python -m evals.validate_suite --suite holdout --verify
+```
+
+The first command writes the content-free public commitment at
+`evals/holdout_manifest.json`; the second recomputes it from the configured external
+directory. The command refuses unreviewed data and an existing manifest. Do not run
+freeze until personal review is complete. Commit the resulting manifest before
+semantic implementation; after the final evaluation, publish the exact-byte case
+archive so others can verify it. Holdout reports include this manifest's SHA-256 and
+the verification state. The public schema rejects additional content-bearing fields.
+
 ## Measured runs after release
 
 ```bash

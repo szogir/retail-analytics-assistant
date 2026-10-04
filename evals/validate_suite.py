@@ -14,6 +14,7 @@ from typing import cast
 
 from evals.compare import tables_match
 from evals.golden import GoldenCase, load_golden_set
+from evals.holdout_commitment import MANIFEST_PATH, verify_commitment, write_commitment
 from evals.provenance import case_hash, file_hash, require_reviewed
 from evals.reference_tools import ReferenceData
 from evals.suites import suite_directory
@@ -161,25 +162,41 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", choices=["development", "holdout"], required=True)
     parser.add_argument("--db", type=Path, default=ROOT / "data" / "retail.duckdb")
-    parser.add_argument("--freeze", action="store_true")
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument("--freeze", action="store_true")
+    action.add_argument("--verify", action="store_true", help="Verify the existing hash commitment")
     parser.add_argument("--holdout-dir", type=Path, help="External holdout path (or HOLDOUT_DIR)")
     args = parser.parse_args()
     try:
         directory = suite_directory(args.suite, args.holdout_dir)
     except (ValueError, FileNotFoundError) as exc:
         parser.error(str(exc))
+    if args.verify:
+        if args.suite != "holdout":
+            parser.error("--verify currently applies to the external holdout commitment")
+        try:
+            digest = verify_commitment(directory, args.db)
+        except (ValueError, FileNotFoundError) as exc:
+            parser.error(str(exc))
+        print(f"holdout: manifest_sha256={digest}; verified: yes")
+        return
     if args.freeze:
         require_reviewed(load_golden_set(directory))
-        if (directory / "frozen.json").exists():
+        target = MANIFEST_PATH if args.suite == "holdout" else directory / "frozen.json"
+        if target.exists():
             raise ValueError(
                 "Already frozen; explicitly version any correction instead of overwriting"
             )
     manifest = verify_references(directory, args.db)
     if args.freeze:
+        if args.suite == "holdout":
+            digest = write_commitment(directory, args.db)
+            print(f"holdout: frozen manifest_sha256={digest}; verified: yes")
+            return
         manifest["status"] = "frozen"
         manifest["frozen_at"] = dt.datetime.now(dt.UTC).isoformat()
-        with (directory / "frozen.json").open("x", encoding="utf-8") as target:
-            target.write(json.dumps(manifest, indent=2) + "\n")
+        with (directory / "frozen.json").open("x", encoding="utf-8") as manifest_file:
+            manifest_file.write(json.dumps(manifest, indent=2) + "\n")
     print(f"{args.suite}: {manifest['case_count']} cases; status={manifest['status']}")
 
 

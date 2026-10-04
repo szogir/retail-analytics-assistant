@@ -101,11 +101,17 @@ def main() -> None:
         "config_hash",
         "scoring_hash",
         "schema_hash",
+        "holdout_manifest_hash",
+        "holdout_verified",
     ):
         if before["info"].get(key) != after["info"].get(key):
             raise ValueError(f"Run configurations differ: {key}")
     if before["info"].get("suite") != "holdout":
         raise ValueError("Confirmatory analysis requires the frozen holdout suite")
+    if not before["info"].get("holdout_verified") or not before["info"].get(
+        "holdout_manifest_hash"
+    ):
+        raise ValueError("Confirmatory analysis requires a verified public holdout commitment")
     result = paired_bootstrap(
         [CaseResult(**r) for r in before["results"]], [CaseResult(**r) for r in after["results"]]
     )

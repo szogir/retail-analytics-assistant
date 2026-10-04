@@ -26,6 +26,7 @@ import typer
 
 from evals.compare import compare_tables
 from evals.golden import GoldenCase, load_golden_set
+from evals.holdout_commitment import verify_commitment
 from evals.provenance import case_hash, file_hash, require_frozen
 from evals.report import (
     CaseResult,
@@ -211,7 +212,11 @@ def main(
         raise typer.BadParameter(str(exc)) from exc
     cases = load_golden_set(directory)
     settings = Settings()
-    require_frozen(directory, cases, settings.db_path)
+    manifest_hash = ""
+    if suite == "holdout":
+        manifest_hash = verify_commitment(directory, settings.db_path)
+    else:
+        require_frozen(directory, cases, settings.db_path)
     if suite == "holdout" and (limit or lang != "both" or repetitions != 3):
         raise typer.BadParameter(
             "Final holdout runs require both languages, no limit, 3 repetitions"
@@ -243,6 +248,8 @@ def main(
         schema_hash=hashlib.sha256(
             json.dumps(SqlAnswer.model_json_schema(), sort_keys=True).encode()
         ).hexdigest(),
+        holdout_manifest_hash=manifest_hash,
+        holdout_verified=bool(manifest_hash),
     )
     output_dir = directory / "artifacts"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -268,6 +275,9 @@ def main(
     # The full per-question dump (SQL, messages) is for debugging and is not versioned.
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     dump = output_dir / f"{stamp}_{mode}_{info.profile}.json"
+    # Do not label a run verified if sealed files changed while it ran.
+    if suite == "holdout" and verify_commitment(directory, settings.db_path) != manifest_hash:
+        raise ValueError("Holdout manifest changed during evaluation")
     dump.write_text(
         json.dumps({"info": asdict(info), "results": [asdict(r) for r in results]}, indent=2),
         encoding="utf-8",

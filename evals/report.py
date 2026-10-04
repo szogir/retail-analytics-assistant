@@ -84,6 +84,8 @@ class RunInfo:
     config_hash: str = ""
     scoring_hash: str = ""
     schema_hash: str = ""
+    holdout_manifest_hash: str = ""
+    holdout_verified: bool = False
 
 
 def percentile(values: Sequence[float], fraction: float) -> float:
@@ -182,6 +184,8 @@ def load_baseline(path: Path, info: RunInfo | None = None) -> dict[str, dict[str
             "config_hash",
             "scoring_hash",
             "schema_hash",
+            "holdout_manifest_hash",
+            "holdout_verified",
         ):
             if document["info"].get(key) != getattr(info, key):
                 raise ValueError(f"Incompatible baseline: {key}")
@@ -247,6 +251,12 @@ def render_report(
         "",
     ]
     lines += ["### Primary accuracy by repetition", ""]
+    if info.suite == "holdout":
+        lines += [
+            f"- Holdout manifest SHA-256: `{info.holdout_manifest_hash}`",
+            f"- Holdout verified: {'yes' if info.holdout_verified else 'no'}",
+            "",
+        ]
     run_scores = []
     for repeat in sorted({r.repeat for r in results}):
         batch = [r for r in data if r.repeat == repeat]

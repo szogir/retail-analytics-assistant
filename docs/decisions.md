@@ -209,3 +209,47 @@ Normal tests and static checks exclude that directory. Development uses the publ
 business contract and development cases only. Local read-deny rules reduce accidental
 exposure but are not an OS-level boundary against arbitrary subprocess reads; a separate
 development checkout without the holdout is the stronger isolation option.
+
+## 9. External holdout with a public hash commitment
+
+**Context.** A directory inside the working tree remains discoverable by searches,
+subprocesses and development tooling. File-tool deny rules alone are insufficient.
+
+**Decision.** Keep the entire holdout outside the repository during development,
+including independent calculators, worksheets, backups and per-case results. Only
+the owner's evaluation environment supplies `HOLDOUT_DIR` or `--holdout-dir`; there
+is no internal default. Missing configuration or an empty suite fails explicitly.
+CI skips the external checks when the variable is unset. Semantic development uses
+the documented business contract and development cases only and excludes holdout
+tests even if the owner's environment variable is inherited.
+
+After personal review, `python -m evals.validate_suite --suite holdout --freeze`
+reruns reference checks and writes `evals/holdout_manifest.json`. That public file
+contains only per-file SHA-256 digests, a combined suite hash, total and category/kind
+counts, a schema version, database identity and freeze date. It includes no question,
+SQL, note or per-case result. The command rejects any unreviewed case and refuses to
+overwrite an existing commitment. The manifest must be committed **before semantic
+implementation begins**. At the time this mechanism is implemented, personal review
+is pending and no real holdout manifest has been created.
+
+`--verify` recomputes the commitment from the external data. Holdout evaluation verifies
+it before and after model execution, records the manifest digest, and prints a verified
+yes/no field in the report. A mismatch stops evaluation rather than grading changed
+data against a stale commitment. The explicit report field also makes unverified
+synthetic/report-only artifacts distinguishable.
+
+After the final evaluation, publish the committed case files and independent calculator
+as an **exact-byte archive**, together with the results. Anyone can recompute the file
+hashes and combined hash against the earlier committed manifest. Do not let line-ending
+normalisation change the published bytes. Corrections require a new version and all
+compared modes to be rerun; they must not silently overwrite the original commitment.
+
+**Limitations.** The benchmark author inspected the holdout for correctness and is not
+blind to it; the semantic implementation must derive its rules only from the shared
+business contract and development cases in a separate session. The owner's personal
+approval is still required. Moving a folder outside a repository reduces accidental
+exposure but does not block arbitrary reads by another process using the same OS account.
+A filesystem sandbox that excludes the directory, or a separately restricted account,
+is needed for an OS-enforced boundary; this change does not claim to establish one.
+A locally generated timestamp is not an independently witnessed timestamp; the earlier
+committed hash provides the content commitment and the recorded development sequence.
