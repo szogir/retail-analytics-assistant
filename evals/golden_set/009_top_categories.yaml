@@ -1,0 +1,28 @@
+id: "009"
+questions:
+  en: "What are the top 5 product categories by net sales in euro in 2025?"
+  hu: null
+user: carla
+as_of_date: 2026-10-04
+category: ranking
+traps: [1, 2, 3, 4]
+expected:
+  kind: result
+order_sensitive: true
+notes: >
+  Convention: a bare year ("in 2025") is the calendar year; only "fiscal" switches.
+  Ranking by net sales in euro, calendar year 2025, English category names.
+reference_sql: |
+  SELECT p.category_en,
+         SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) AS net_sales_eur
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  JOIN dim_product p ON p.product_id = f.product_id
+  JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+  WHERE NOT f.is_cancelled
+    AND NOT s.is_test_store
+    AND f.sales_date >= DATE '2025-01-01'
+    AND f.sales_date < DATE '2026-01-01'
+  GROUP BY p.category_en
+  ORDER BY net_sales_eur DESC
+  LIMIT 5

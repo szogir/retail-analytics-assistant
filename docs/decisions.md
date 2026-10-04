@@ -84,3 +84,63 @@ purpose. Real or public retail data cannot guarantee that, and has licence limit
 
 **Consequences.** Measured accuracy is an upper estimate: real data is noisier. This
 goes into the README limitations.
+
+---
+
+## 5. Several years of data, closed days and a holiday table
+
+**Context.** One year of data cannot support year-over-year questions, and a store that
+trades every day of the year is unrealistic. Both change which answers are correct.
+
+**Decision.**
+- The data covers 2023-03-01 to 2026-10-03: three full fiscal years and a part of the
+  current one. Volume grows 4% and prices 3% per year.
+- Stores have no sales rows on public holidays; Austrian stores are also closed on
+  Sundays (a trading rule). Hungarian stores are open on Sundays.
+- The holiday list is also stored in `dim_holiday` (country, date, name), generated from
+  the same function that closes the stores, so the two cannot disagree. Easter-based
+  holidays are computed, not typed in.
+- `fx_rate.eur_rate` means "units of the currency per 1 EUR"; to convert to euro, divide.
+  The HUF rate follows a mean-reverting walk around 370 within +-12.
+- Facts are built with vectorised numpy and bulk-loaded through a temporary Parquet file.
+
+**Alternatives considered.**
+- *Holidays only inside the generator* - the correct answer to "how many holidays" would
+  then be unreachable from SQL, and the semantic layer would have nothing to describe.
+- *`pyarrow` for direct DataFrame loading* - an extra dependency; the Parquet round trip
+  takes a fraction of a second for 1.5 million rows.
+- *Renaming `eur_rate` to `units_per_eur`* - clearer, but the name stays as specified;
+  the direction is documented in the DDL, the generator and the tests instead.
+
+**Consequences.** "Average per day" has two valid readings (calendar days vs trading
+days), which is a deliberate trap. The incomplete fiscal year 2026 must not be compared
+with a full year. Holiday dates are a simplified national list (no bridge days).
+
+---
+
+## 6. Evaluate in three steps: schema, schema with comments, semantic layer
+
+**Context.** A column such as `eur_rate` is easy to misread: multiplying instead of
+dividing turns 0.79 million euro of Hungarian sales into 109,469 million. If the baseline
+sees only the column name, it fails for a reason a one-line comment would remove, and the
+semantic layer would get credit for what plain metadata can do.
+
+**Decision.** The database carries column comments (real metadata, no business rules).
+The evaluation compares three modes: `naive` (names and types only), `commented`
+(plus the column comments) and `semantic` (metrics, join paths, examples).
+
+**Alternatives considered.** Two modes only (naive vs semantic) - a bigger headline
+number, but an unfair baseline.
+
+**Consequences.** One more mode in the context builder and in the report. The semantic
+layer still has to show a gain over the commented baseline, which is the more honest claim.
+
+## 7. Metric conventions used by the golden set
+
+- Net sales = gross - discount - VAT, converted with the rate of the sales day, excluding
+  cancelled receipts and the test store. Returns are negative lines and reduce net sales.
+- Receipt count and average basket count SALES receipts only (no return receipts, no
+  cancelled receipts); the basket is net sales of those receipts divided by their count.
+- A bare year ("in 2025") means the calendar year. Only the word "fiscal" selects the
+  fiscal year (March to February).
+- Average per day divides by trading days (days with sales), not by calendar days.

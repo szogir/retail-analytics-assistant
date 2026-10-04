@@ -42,6 +42,12 @@ docs/decisions.md       design decisions and the alternatives considered
 This is a demo, not a production system. A dedicated section will list what is
 missing for production use and how it would be addressed.
 
+- **Synthetic, scaled-down data.** The dataset is fictional and shaped like discount
+  retail. Volumes are deliberately small (about 11 receipts per store per day, roughly
+  1.4 million euro of sales per year for the whole chain) so that everything runs in
+  seconds. VAT rates, prices and holidays are simplified and are not tax-law or calendar
+  references. Real data is noisier, so measured accuracy is an upper estimate.
+
 ## License
 
 MIT - see [LICENSE](LICENSE).

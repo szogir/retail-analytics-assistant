@@ -1,0 +1,27 @@
+id: "007"
+questions:
+  en: "What share of net sales came from private label products in fiscal year 2025?"
+  hu: null
+user: carla
+as_of_date: 2026-10-04
+category: ratio
+traps: [1, 2, 3, 4]
+expected:
+  kind: result
+notes: >
+  Private label share = net sales of private label products / total net sales (both in
+  euro, same filters). A ratio of sums, expressed as a fraction between 0 and 1.
+reference_sql: |
+  SELECT SUM(CASE WHEN p.is_private_label
+                  THEN (f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate
+             END)
+         / SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate)
+         AS private_label_share
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  JOIN dim_product p ON p.product_id = f.product_id
+  JOIN dim_date d ON d.date = f.sales_date
+  JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+  WHERE NOT f.is_cancelled
+    AND NOT s.is_test_store
+    AND d.fiscal_year = 2025

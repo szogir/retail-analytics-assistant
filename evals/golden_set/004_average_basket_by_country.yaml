@@ -1,0 +1,30 @@
+id: "004"
+questions:
+  en: "What was the average basket value in euro per country in 2025?"
+  hu: null
+user: carla
+as_of_date: 2026-10-04
+category: ratio
+traps: [1, 2, 3, 4, 5]
+expected:
+  kind: result
+notes: >
+  Average basket = net sales of SALES receipts in euro / number of those receipts,
+  per country. Return receipts (is_return) are left out of both the numerator and the
+  denominator, as are cancelled receipts and the test store. It must not be an average
+  of per-receipt or per-day averages. Convention: a bare year ("in 2025") is the
+  calendar year.
+reference_sql: |
+  SELECT s.country_code,
+         SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate)
+           / COUNT(DISTINCT f.receipt_id) AS avg_basket_eur
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+  WHERE NOT f.is_cancelled
+    AND NOT f.is_return
+    AND NOT s.is_test_store
+    AND f.sales_date >= DATE '2025-01-01'
+    AND f.sales_date < DATE '2026-01-01'
+  GROUP BY s.country_code
+  ORDER BY s.country_code

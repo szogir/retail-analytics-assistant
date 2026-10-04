@@ -12,21 +12,27 @@ import duckdb
 import numpy as np
 import pytest
 
-from data_gen.generate import (
+from data_gen.dimensions import (
+    DATA_DAYS,
+    DATA_END,
+    DATA_START,
     SEED,
     build_dim_date,
     build_dim_product,
     build_dim_store,
     fiscal_year_start,
-    write_dimensions,
 )
+from data_gen.generate import build_database
+
+SHORT_WINDOW_START = dt.date(2025, 3, 1)
+SHORT_WINDOW_DAYS = 30  # keeps the database tests fast
 
 
 def read_table(db_path: Path, table: str) -> list[tuple[object, ...]]:
     connection = duckdb.connect(str(db_path), read_only=True)
     try:
         # `table` comes from this test file, never from user input.
-        return connection.execute(f"SELECT * FROM {table} ORDER BY 1").fetchall()  # noqa: S608
+        return connection.execute(f"SELECT * FROM {table} ORDER BY ALL").fetchall()  # noqa: S608
     finally:
         connection.close()
 
@@ -34,12 +40,19 @@ def read_table(db_path: Path, table: str) -> list[tuple[object, ...]]:
 # --- dim_date -----------------------------------------------------------------------
 
 
-def test_dim_date_covers_one_year_of_unique_days() -> None:
+def test_dim_date_covers_the_whole_period_with_unique_days() -> None:
     rows = build_dim_date()
-    assert len(rows) == 365
-    assert len({row.date for row in rows}) == 365
-    assert rows[0].date == dt.date(2025, 3, 1)
-    assert rows[-1].date == dt.date(2026, 2, 28)
+    assert len(rows) == DATA_DAYS
+    assert len({row.date for row in rows}) == DATA_DAYS
+    assert rows[0].date == dt.date(2023, 3, 1)
+    assert rows[-1].date == DATA_END == dt.date(2026, 10, 3)
+
+
+def test_last_fiscal_year_is_incomplete() -> None:
+    rows = build_dim_date()
+    assert rows[-1].fiscal_year == 2026
+    assert rows[-1].fiscal_month == 8  # October is the 8th month of a March-based year
+    assert DATA_START.month == 3 and DATA_START.day == 1  # starts on a fiscal year start
 
 
 def test_fiscal_year_starts_on_first_of_march() -> None:
@@ -146,22 +159,22 @@ def test_same_seed_gives_identical_products() -> None:
 def test_two_runs_write_identical_tables(tmp_path: Path) -> None:
     first_db = tmp_path / "first.duckdb"
     second_db = tmp_path / "second.duckdb"
-    write_dimensions(first_db, np.random.default_rng(SEED))
-    write_dimensions(second_db, np.random.default_rng(SEED))
-    for table in ("dim_date", "dim_store", "dim_product"):
+    build_database(first_db, SHORT_WINDOW_START, SHORT_WINDOW_DAYS)
+    build_database(second_db, SHORT_WINDOW_START, SHORT_WINDOW_DAYS)
+    for table in ("dim_date", "dim_store", "dim_product", "dim_holiday", "fx_rate", "fact_sales"):
         assert read_table(first_db, table) == read_table(second_db, table)
 
 
 def test_written_database_has_expected_row_counts(tmp_path: Path) -> None:
     db_path = tmp_path / "retail.duckdb"
-    write_dimensions(db_path, np.random.default_rng(SEED))
-    assert len(read_table(db_path, "dim_date")) == 365
+    build_database(db_path, SHORT_WINDOW_START, SHORT_WINDOW_DAYS)
+    assert len(read_table(db_path, "dim_date")) == SHORT_WINDOW_DAYS
     assert len(read_table(db_path, "dim_store")) == 20
     assert 150 <= len(read_table(db_path, "dim_product")) <= 250
 
 
 def test_rerun_overwrites_existing_database(tmp_path: Path) -> None:
     db_path = tmp_path / "retail.duckdb"
-    write_dimensions(db_path, np.random.default_rng(SEED))
-    write_dimensions(db_path, np.random.default_rng(SEED))  # must not fail or duplicate
+    build_database(db_path, SHORT_WINDOW_START, SHORT_WINDOW_DAYS)
+    build_database(db_path, SHORT_WINDOW_START, SHORT_WINDOW_DAYS)  # must not fail or duplicate
     assert len(read_table(db_path, "dim_store")) == 20

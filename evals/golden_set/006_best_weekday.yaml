@@ -1,0 +1,27 @@
+id: "006"
+questions:
+  en: "Which weekday had the highest total net sales in euro in 2025?"
+  hu: null
+user: carla
+as_of_date: 2026-10-04
+category: ranking
+traps: [1, 2, 3, 4]
+expected:
+  kind: result
+notes: >
+  Convention: a bare year ("in 2025") is the calendar year; only "fiscal" switches.
+  Weekdays are compared on the total net sales of calendar year 2025 (not on a
+  per-day average).
+reference_sql: |
+  SELECT d.weekday
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  JOIN dim_date d ON d.date = f.sales_date
+  JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+  WHERE NOT f.is_cancelled
+    AND NOT s.is_test_store
+    AND f.sales_date >= DATE '2025-01-01'
+    AND f.sales_date < DATE '2026-01-01'
+  GROUP BY d.weekday
+  ORDER BY SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) DESC
+  LIMIT 1
