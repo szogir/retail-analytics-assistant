@@ -25,4 +25,5 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        exclude: uv\.lock
+        # This generated manifest contains verified SHA-256 digests, not credentials.
+        exclude: ^(?:uv\.lock|evals/golden_set/candidate\.json)$

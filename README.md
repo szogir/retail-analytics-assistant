@@ -4,17 +4,20 @@ A small, **evaluated** text-to-SQL assistant: business users ask questions about
 (synthetic) discount-retail chain in English or Hungarian, and get an answer that
 shows **which SQL ran, which metric definition was used and which assumptions were made**.
 
-> Status: work in progress. Results, architecture diagram and demo will be added here.
+> Status: work in progress. Naive and metadata-commented evaluation modes work.
+> The 50 development and 50 held-out cases are independently checked candidates awaiting
+> personal review and freezing. Semantic metrics, the SQL validator and per-user views
+> are not implemented yet. Historical reports use the original 28-case suite.
 
-## What this project demonstrates
+## Intended demonstration
 
 - **Accuracy you can measure** - a golden test set and an evaluation runner that compares
   query *results* (execution accuracy), not SQL text.
-- **A semantic layer** - metric definitions in YAML, so "net sales" means the same thing
+- **A semantic layer** *(planned)* - metric definitions in YAML, so "net sales" means the same thing
   in every answer.
-- **Permissions enforced in the backend** - the model never decides what a user may see;
+- **Permissions enforced in the backend** *(planned)* - the model never decides what a user may see;
   queries run against per-user filtered views.
-- **Safety by design** - generated SQL is parsed and validated (read-only, allow-listed
+- **Safety by design** *(planned)* - generated SQL is parsed and validated (read-only, allow-listed
   tables) before execution.
 
 ## Quickstart
@@ -28,6 +31,12 @@ cp .env.example .env          # then add your ANTHROPIC_API_KEY
 ```
 
 More commands (data generation, evaluation, CLI) will be documented as they are added.
+
+The [evaluation protocol](docs/decisions.md#8-preregistered-evaluation-protocol-2026-10-04)
+defines the primary metric and paired analysis before semantic development.
+The [shared business contract](docs/business_contract.md) contains the rules available
+to implementation. See [evaluation operation](docs/evaluation.md) for offline validation,
+human approval and release commands. Default checks do not read sealed cases.
 
 ## Project layout
 

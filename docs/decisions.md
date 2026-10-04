@@ -144,3 +144,68 @@ layer still has to show a gain over the commented baseline, which is the more ho
 - A bare year ("in 2025") means the calendar year. Only the word "fiscal" selects the
   fiscal year (March to February).
 - Average per day divides by trading days (days with sales), not by calendar days.
+
+## 8. Preregistered evaluation protocol (2026-10-04)
+
+**Timing.** This protocol and both candidate suites are authored before semantic-layer
+implementation. Human review is pending; neither candidate is represented as approved
+or frozen until its release gate passes. The final manifest records all case content and
+review metadata, raw YAML hashes, reference-check code and database identity. A local
+timestamp/hash proves content identity, not an independently witnessed creation date.
+
+**Suites.** 50 development cases and 50 held-out cases, each with EN/HU wording. Each
+contains 40 result cases, five clarification cases, four security cases and one unrelated
+request. Ten result cases per suite require documented defaults and explicit assumptions.
+The existing 28 development cases remain in development. All 80 result references must
+agree with independently written DataFrame arithmetic. No merely executable SQL counts
+as sufficient reference validation. The owner reviews all 100 cases personally.
+
+**Primary outcome.** Execution accuracy on the 40 result cases in each suite, allowing
+extra columns but using relative numeric tolerance 1e-6 and absolute tolerance 1e-9.
+An incorrect refusal, clarification, SQL/provider failure or truncated result scores zero.
+A truncated reference aborts the run. Both languages have equal weight within a case;
+all cases have equal weight. NULL, empty results and zero are distinct.
+
+**Secondary outcomes.** Original strict accuracy (exact column count), original lenient
+accuracy (1% tolerance), accuracy by language/category, required-answer cases with stated
+assumptions, justified clarifications, refusals, latency and actual recorded cost. The
+assumption check is a lexical proxy and never changes the numerical primary outcome.
+Security is reported separately; until backend enforcement exists, this is refusal
+behaviour only. Permission-specific cases will form a separate versioned suite later.
+
+**Repeated runs.** After approval and freezing, run the naive development baseline three
+times with the same model/profile, temperature, output limit, database and cases. Report
+all runs, their mean, range and sample standard deviation; do not select the best run.
+Freeze prompts, model configuration, scoring and semantic files before revealing holdout
+results. On holdout, run naive, commented and semantic modes three times each, both
+languages, with no omitted cases: 900 model requests. The old 28-case result is historical
+and must not be compared numerically with the enlarged suite.
+
+**Confirmatory comparison.** Semantic minus commented primary accuracy is the main
+comparison; semantic minus naive is a secondary descriptive comparison. For each result
+case, average its six outcomes (two languages, three repetitions) per mode, then take the
+paired difference. Resample the 40 case differences with replacement, 10,000 bootstrap
+samples, seed 42. Report the mean difference and two-sided percentile 95% interval. Do
+not resample translations or repeats as independent observations. The bootstrap assumes
+case-level exchangeability; shared templates/schema and manual selection limit broader
+generalisation. It is not a confidence guarantee for arbitrary real-world questions.
+
+**Success rule.** Claim a material semantic benefit only if semantic minus commented on
+holdout is at least +10 percentage points and its 95% interval lower bound is above zero.
+Report naive comparison and all secondary metrics even when the rule fails. Do not change
+the threshold, choose a favourable language/model or drop cases after seeing results.
+Development noise is diagnostic, not a significance threshold. Security must pass every
+security case in every repetition before claiming that the tested safety behaviour passed.
+
+**Failures and changes.** Keep failures in the denominator. A run interrupted before all
+requests finish is incomplete and cannot enter confirmatory analysis. No selective retry
+of failed questions. Any full rerun must be identified, with the reason recorded. Correct
+a genuinely wrong reference by a new suite version and rerun all compared modes; never
+silently rewrite the old manifest or baseline. Holdout-informed development turns that
+suite into regression data, so a new unseen suite is needed for another confirmatory claim.
+
+**Isolation.** All sealed YAML, arithmetic and detailed outputs stay under `evals/holdout/`.
+Normal tests and static checks exclude that directory. Development uses the public
+business contract and development cases only. Local read-deny rules reduce accidental
+exposure but are not an OS-level boundary against arbitrary subprocess reads; a separate
+development checkout without the holdout is the stronger isolation option.
