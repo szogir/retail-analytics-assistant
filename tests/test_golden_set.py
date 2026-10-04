@@ -5,6 +5,7 @@ every case is executed against the full synthetic database.
 """
 
 import datetime as dt
+from pathlib import Path
 
 import duckdb
 import pytest
@@ -47,3 +48,10 @@ def test_net_sales_of_case_001_are_plausible(db: duckdb.DuckDBPyConnection) -> N
     rows = db.execute(case.reference_sql).fetchall()
     assert [row[0] for row in rows] == ["AT", "HU"]
     assert all(row[1] > 0 for row in rows)
+
+
+def test_loader_rejects_missing_or_empty_folder(tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        load_golden_set(tmp_path / "does_not_exist")
+    with pytest.raises(FileNotFoundError):
+        load_golden_set(tmp_path)  # exists, but holds no case file

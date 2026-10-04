@@ -178,3 +178,16 @@ def test_rerun_overwrites_existing_database(tmp_path: Path) -> None:
     build_database(db_path, SHORT_WINDOW_START, SHORT_WINDOW_DAYS)
     build_database(db_path, SHORT_WINDOW_START, SHORT_WINDOW_DAYS)  # must not fail or duplicate
     assert len(read_table(db_path, "dim_store")) == 20
+
+
+def test_window_without_any_holiday_still_builds(tmp_path: Path) -> None:
+    # 2025-03-03 is an ordinary Monday: the holiday table stays empty. This used to fail
+    # while loading the empty frame.
+    db_path = tmp_path / "one_day.duckdb"
+    build_database(db_path, dt.date(2025, 3, 3), 1)
+    connection = duckdb.connect(str(db_path), read_only=True)
+    try:
+        count = connection.execute("SELECT COUNT(*) FROM dim_holiday").fetchone()
+    finally:
+        connection.close()
+    assert count == (0,)

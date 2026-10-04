@@ -87,11 +87,19 @@ def load_golden_set(directory: Path = GOLDEN_SET_DIR) -> list[GoldenCase]:
     Raises:
         pydantic.ValidationError: If a file does not match the model.
         ValueError: If two files use the same case id.
+        FileNotFoundError: If the folder does not exist or contains no case file.
     """
+    # Why: an empty list would let the eval report "0 of 0 correct" as a success, so a
+    # wrong path must fail loudly instead.
+    if not directory.is_dir():
+        raise FileNotFoundError(f"golden set folder not found: {directory}")
     cases: list[GoldenCase] = []
     for path in sorted(directory.glob("*.yaml")):
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
         cases.append(GoldenCase.model_validate(raw))
+
+    if not cases:
+        raise FileNotFoundError(f"no *.yaml case files in {directory}")
 
     ids = [case.id for case in cases]
     if len(ids) != len(set(ids)):

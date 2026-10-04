@@ -170,6 +170,12 @@ def load_frame(connection: duckdb.DuckDBPyConnection, table: str, frame: pl.Data
     """
     if table not in TABLE_NAMES:
         raise ValueError(f"unknown table: {table}")
+    # Why: an empty frame has no columns, so the Parquet file would be unreadable
+    # ("Need at least one non-root column"). The table already exists from the DDL, so
+    # there is simply nothing to insert. This happens for `dim_holiday` when a short
+    # date window contains no public holiday.
+    if frame.is_empty():
+        return
     with tempfile.TemporaryDirectory() as folder:
         parquet_path = Path(folder) / f"{table}.parquet"
         frame.write_parquet(parquet_path)
