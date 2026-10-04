@@ -178,6 +178,14 @@ def test_bootstrap_keeps_languages_and_repeats_inside_the_case() -> None:
     assert not zero.meets_success_rule
 
 
+def test_estimate_contains_only_plain_python_values() -> None:
+    # Regression: NumPy 2 scalars (`np.bool_`, `np.float64`) are not JSON serializable,
+    # and the analysis CLI prints this estimate as JSON.
+    estimate = paired_bootstrap(observations(False), observations(True), samples=100)
+    assert all(type(value) in (int, float, bool) for value in asdict(estimate).values())
+    json.dumps(asdict(estimate))
+
+
 def test_bootstrap_rejects_missing_and_duplicate_pairs() -> None:
     with pytest.raises(ValueError, match="identical, unique"):
         paired_bootstrap(observations(True), observations(True)[:-1])

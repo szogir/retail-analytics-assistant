@@ -69,13 +69,18 @@ def paired_bootstrap(
     values = np.array(differences, dtype=float)
     rng = np.random.default_rng(seed)
     means = rng.choice(values, size=(samples, len(values)), replace=True).mean(axis=1)
-    lower, upper = np.quantile(means, [0.025, 0.975])
+    quantiles = np.quantile(means, [0.025, 0.975])
+    # Convert to plain floats BEFORE comparing: a comparison on a NumPy scalar yields
+    # `np.bool_`, which `json.dumps` rejects. Design note: the alternative, a custom
+    # JSON encoder, would hide the problem instead of keeping the result type plain.
+    lower = float(quantiles[0])
+    upper = float(quantiles[1])
     difference = float(values.mean())
     return PairedEstimate(
         len(ids),
         difference,
-        float(lower),
-        float(upper),
+        lower,
+        upper,
         samples,
         seed,
         difference >= 0.10 and lower > 0,
@@ -101,6 +106,7 @@ def main() -> None:
         "config_hash",
         "scoring_hash",
         "schema_hash",
+        "data_case_count",
         "holdout_manifest_hash",
         "holdout_verified",
     ):
@@ -115,8 +121,10 @@ def main() -> None:
     result = paired_bootstrap(
         [CaseResult(**r) for r in before["results"]], [CaseResult(**r) for r in after["results"]]
     )
-    if result.cases != 40:
-        raise ValueError("The registered holdout primary analysis requires all 40 data cases")
+    if result.cases != before["info"].get("data_case_count", 0):
+        raise ValueError(
+            "The registered holdout primary analysis requires every recorded data case"
+        )
     comparison = f"{after['info']['mode']} minus {before['info']['mode']}"
     confirmatory = (before["info"]["mode"], after["info"]["mode"]) == ("commented", "semantic")
     print(
