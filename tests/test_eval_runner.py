@@ -124,8 +124,10 @@ def test_report_contains_the_required_sections() -> None:
     ]
     text = render_report(info, results, baseline=None, case_count=2)
     for needle in (
-        "Strict:",
-        "Lenient:",
+        "Strict (all questions",
+        "Lenient (all questions",
+        "denominator: 2 data questions (1 data cases)",
+        "denominator: all 3 questions (2 cases)",
         "Security cases passed",
         "By category",
         "By language",

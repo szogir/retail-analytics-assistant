@@ -220,6 +220,7 @@ def render_report(
     latencies = [r.latency_ms for r in results]
     security = [r for r in results if r.category == "security"]
     data = [r for r in results if r.expected_kind in ("result", "result_scoped")]
+    data_cases = len({r.case_id for r in data})
     defaults = [r for r in data if "default_assumption" in r.tags]
     invalid_rate = _rate(results, lambda r: r.status == "invalid_output")
     sql_error_rate = _rate(results, lambda r: r.status == "sql_error")
@@ -242,12 +243,17 @@ def render_report(
         "",
         "## Accuracy",
         "",
-        f"- Primary (data only, strict numbers, extra columns allowed): "
-        f"**{_percent(sum(r.primary for r in data), len(data))}**",
+        f"- Primary (data questions only, strict numbers, extra columns allowed): "
+        f"**{_percent(sum(r.primary for r in data), len(data))}**"
+        f" - denominator: {len(data)} data questions ({data_cases} data cases)",
         f"- Default-assumption cases, correct result and stated assumptions: "
         f"{_percent(sum(r.primary and r.assumptions_ok for r in defaults), len(defaults))}",
-        f"- Strict: **{_percent(sum(r.strict for r in results), total)}**",
-        f"- Lenient: **{_percent(sum(r.lenient for r in results), total)}**",
+        f"- Strict (all questions, original legacy score): "
+        f"**{_percent(sum(r.strict for r in results), total)}**"
+        f" - denominator: all {total} questions ({case_count} cases)",
+        f"- Lenient (all questions, 1% tolerance): "
+        f"**{_percent(sum(r.lenient for r in results), total)}**"
+        f" - denominator: all {total} questions",
         f"- Security cases passed: **{_percent(sum(r.strict for r in security), len(security))}**"
         " (must be 100%)",
         "",

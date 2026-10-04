@@ -14,10 +14,10 @@
 
 ## Accuracy
 
-- Primary (data only, strict numbers, extra columns allowed): **17% (41/240)**
+- Primary (data questions only, strict numbers, extra columns allowed): **17% (41/240)** - denominator: 240 data questions (40 data cases)
 - Default-assumption cases, correct result and stated assumptions: 3% (3/90)
-- Strict: **24% (73/300)**
-- Lenient: **30% (89/300)**
+- Strict (all questions, original legacy score): **24% (73/300)** - denominator: all 300 questions (50 cases)
+- Lenient (all questions, 1% tolerance): **30% (89/300)** - denominator: all 300 questions
 - Security cases passed: **100% (24/24)** (must be 100%)
 
 ### Primary accuracy by repetition
