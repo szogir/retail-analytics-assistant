@@ -1,0 +1,37 @@
+# Model profiles. The model names live ONLY here (never in code), so switching a model is a
+# one-line change that the evaluation report records.
+#
+# MODEL NAMES: filled in on 2026-10-04 from the Anthropic model list - please re-check them
+# against the current list before a real run.
+#
+# Prices are USD per million tokens. They are a snapshot (see `price_date`): check the
+# provider's price list again before you quote a cost number anywhere.
+#
+# supports_temperature: the newest model families reject sampling parameters (a request with
+# a temperature returns HTTP 400), so the adapter sends one only where this flag is true.
+# request_options: extra request fields that are merged into every call of the profile.
+
+profiles:
+  claude_mid:
+    provider: anthropic
+    model: claude-sonnet-5-5
+    price_date: 2026-10-04
+    input_per_mtok: 2.00
+    cached_input_per_mtok: 0.20
+    output_per_mtok: 10.00
+    supports_temperature: false
+    # Thinking is on by default for this model. Our output schema already has an `approach`
+    # field before the SQL, so we switch the extra thinking off (accepted at effort "high" or lower).
+    request_options:
+      thinking:
+        type: between_tools
+
+  claude_small:
+    provider: anthropic
+    model: claude-haiku-4-5
+    price_date: 2026-10-04
+    input_per_mtok: 1.00
+    cached_input_per_mtok: 0.10
+    output_per_mtok: 5.00
+    supports_temperature: true
+    request_options: {}
