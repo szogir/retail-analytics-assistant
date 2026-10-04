@@ -1,0 +1,57 @@
+# Allowed join paths (the join condition is called `condition`: a bare `on` key would be
+# read as the boolean true by YAML 1.1). Every metric query starts from the base table and adds only these.
+version: 1
+base_table: fact_sales
+base_alias: f
+joins:
+  - name: store
+    left_table: fact_sales
+    left_alias: f
+    right_table: dim_store
+    right_alias: s
+    condition: s.store_id = f.store_id
+    description: >-
+      Adds country_code, region_name, city and is_test_store. Needed by every metric,
+      because test stores must be excluded.
+    source: schema:dim_store.store_id
+  - name: product
+    left_table: fact_sales
+    left_alias: f
+    right_table: dim_product
+    right_alias: p
+    condition: p.product_id = f.product_id
+    description: >-
+      Adds product names (name_en / name_hu), categories (category_en / category_hu) and
+      is_private_label.
+    source: schema:dim_product.product_id
+  - name: date
+    left_table: fact_sales
+    left_alias: f
+    right_table: dim_date
+    right_alias: d
+    condition: d.date = f.sales_date
+    description: >-
+      Adds weekday and the fiscal columns fiscal_year, fiscal_month and fiscal_week.
+      Calendar periods can be filtered directly on f.sales_date without this join.
+    source: schema:dim_date.date
+  - name: fx
+    left_table: fact_sales
+    left_alias: f
+    right_table: fx_rate
+    right_alias: fx
+    condition: fx.rate_date = f.sales_date AND fx.currency = f.currency
+    description: >-
+      Gives the exchange rate of the sale day for the currency of the row. eur_rate is
+      units of the currency per 1 EUR, so amounts are DIVIDED by it to get euro.
+    source: contract:Measures
+  - name: store_holiday
+    left_table: dim_store
+    left_alias: s
+    right_table: dim_holiday
+    right_alias: h
+    condition: h.country_code = s.country_code
+    description: >-
+      Public holidays of the country of a store (columns holiday_date, holiday_name). The
+      store is closed on these days, so fact_sales has no rows for them. To count holidays,
+      query dim_holiday directly.
+    source: decision:5

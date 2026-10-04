@@ -1,0 +1,185 @@
+# Business measures and exactly how they are calculated.
+# Aliases: f = fact_sales, s = dim_store, p = dim_product, d = dim_date, fx = fx_rate
+# (see joins.yaml). Every entry names the document section it comes from.
+version: 1
+metrics:
+  - name: net_sales_eur
+    labels: {en: Net sales (EUR), hu: Nettó árbevétel (EUR)}
+    description: >-
+      Gross amount - discount - VAT (VAT is included in the gross amount), divided by the
+      exchange rate of the sale day, in euro. Returns are negative lines: they reduce net
+      sales as negative rows and are NOT filtered out. Do not add NOT f.is_return to this
+      measure.
+    synonyms:
+      en: [revenue, turnover, sales revenue, sales, net revenue]
+      hu: [bevétel, árbevétel, forgalom, nettó forgalom]
+    type: additive
+    expression: SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate)
+    base_table: fact_sales
+    requires: [store, fx]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store]
+    source: contract:Measures
+
+  - name: net_sales_local
+    labels: {en: Net sales (local currency), hu: Nettó árbevétel (helyi pénznem)}
+    description: >-
+      The same net sales (gross - discount - VAT, returns kept as negative lines) in the
+      currency of the rows, WITHOUT dividing by the exchange rate. Use it only when a
+      currency is explicitly requested, for example forint. Restrict the rows to that
+      currency (f.currency = 'HUF'), because adding HUF and EUR amounts is meaningless.
+    synonyms:
+      en: [net sales in forint, net sales in HUF, net sales in local currency]
+      hu: [nettó árbevétel forintban, árbevétel forintban, helyi pénznemű nettó]
+    type: additive
+    expression: SUM(f.gross_amount - f.discount_amount - f.vat_amount)
+    base_table: fact_sales
+    requires: [store]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store]
+    source: contract:Measures
+
+  - name: gross_sales_eur
+    labels: {en: Gross sales (EUR), hu: Bruttó árbevétel (EUR)}
+    description: >-
+      Gross amount (VAT included) before discounts, divided by the exchange rate of the
+      sale day. Returns are negative lines and stay in the sum.
+    synonyms:
+      en: [gross revenue, gross turnover]
+      hu: [bruttó forgalom, bruttó árbevétel]
+    type: additive
+    expression: SUM(f.gross_amount / fx.eur_rate)
+    base_table: fact_sales
+    requires: [store, fx]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store]
+    source: contract:Measures
+
+  - name: units_sold
+    labels: {en: Units sold, hu: Eladott darabszám}
+    description: >-
+      Number of units on sales lines. Return receipts are excluded.
+    synonyms:
+      en: [units, quantity sold, pieces sold]
+      hu: [darabszám, eladott mennyiség, eladott db]
+    type: additive
+    expression: SUM(f.quantity)
+    base_table: fact_sales
+    requires: [store]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store, NOT f.is_return]
+    source: contract:Measures
+
+  - name: receipt_count
+    labels: {en: Number of receipts, hu: Bizonylatok száma}
+    description: >-
+      Number of distinct sales receipts. Return receipts are excluded. A covered day on which
+      the store was closed has a count of zero.
+    synonyms:
+      en: [receipts, transactions, number of baskets]
+      hu: [blokkok, bizonylatok, nyugták, tranzakciók]
+    type: count_distinct
+    expression: COUNT(DISTINCT f.receipt_id)
+    base_table: fact_sales
+    requires: [store]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store, NOT f.is_return]
+    source: contract:Measures
+
+  - name: avg_basket_eur
+    labels: {en: Average basket (EUR), hu: Átlagos kosárérték (EUR)}
+    description: >-
+      Net sales of the sales receipts divided by the number of distinct sales receipts, in
+      euro. Return receipts are excluded from BOTH numerator and denominator (unlike
+      net_sales_eur, which keeps returns). Always a ratio of two sums at the requested level:
+      never the average of store, day or country averages.
+    synonyms:
+      en: [basket value, average basket value, average receipt value, basket size]
+      hu: [kosárérték, átlagos kosár, átlagos blokkérték]
+    type: ratio
+    numerator: SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate)
+    denominator: COUNT(DISTINCT f.receipt_id)
+    base_table: fact_sales
+    requires: [store, fx]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store, NOT f.is_return]
+    source: contract:Measures
+
+  - name: return_rate
+    labels: {en: Return rate, hu: Visszáru-arány}
+    description: >-
+      Returned units (as a positive number) divided by sold units, as a fraction between 0
+      and 1 unless a percentage is requested. Numerator and denominator use the same scope.
+      Both receipt kinds are needed here, so there is no is_return filter.
+    synonyms:
+      en: [returns share, share of returned units]
+      hu: [visszáru aránya, visszáruarány]
+    type: ratio
+    numerator: SUM(CASE WHEN f.is_return THEN -f.quantity ELSE 0 END)
+    denominator: SUM(CASE WHEN NOT f.is_return THEN f.quantity ELSE 0 END)
+    base_table: fact_sales
+    requires: [store]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store]
+    source: contract:Measures
+
+  - name: discount_rate
+    labels: {en: Discount rate, hu: Kedvezmény-arány}
+    description: >-
+      Signed discounts divided by signed gross sales, both in euro, as a fraction between 0
+      and 1 unless a percentage is requested. Returns stay in both sums.
+    synonyms:
+      en: [discount share, share of discounts, promotion rate]
+      hu: [kedvezmény aránya, akciós arány, engedmény aránya]
+    type: ratio
+    numerator: SUM(f.discount_amount / fx.eur_rate)
+    denominator: SUM(f.gross_amount / fx.eur_rate)
+    base_table: fact_sales
+    requires: [store, fx]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store]
+    source: contract:Measures
+
+  - name: private_label_share
+    labels: {en: Private-label share, hu: Saját márkás részarány}
+    description: >-
+      Signed net sales of private-label products divided by total signed net sales, in euro,
+      as a fraction between 0 and 1 unless a percentage is requested. Numerator and
+      denominator use the same scope (same period, country and category).
+    synonyms:
+      en: [own brand share, private label share of sales]
+      hu: [saját márka részesedése, saját márkás arány]
+    type: ratio
+    numerator: >-
+      SUM(CASE WHEN p.is_private_label
+          THEN (f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate ELSE 0 END)
+    denominator: SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate)
+    base_table: fact_sales
+    requires: [store, product, fx]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store]
+    source: contract:Measures
+
+  - name: trading_days
+    labels: {en: Trading days, hu: Kereskedési napok}
+    description: >-
+      Number of distinct dates with valid sales (not cancelled, not a test store), counted
+      once at the requested grouping level. Closed days and holidays have no rows and are
+      not counted.
+    synonyms:
+      en: [days with sales, open days, sales days]
+      hu: [értékesítési napok, nyitvatartási napok, forgalmazási napok]
+    type: count_distinct
+    expression: COUNT(DISTINCT f.sales_date)
+    base_table: fact_sales
+    requires: [store]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store]
+    source: decision:7
+
+  - name: avg_daily_net_sales_eur
+    labels: {en: Average daily net sales (EUR), hu: Átlagos napi nettó árbevétel (EUR)}
+    description: >-
+      Net sales in euro divided by the number of trading days (dates with valid sales), not
+      by calendar days. State this convention in the assumptions. A calendar-day average is
+      only used when the user asks for it explicitly.
+    synonyms:
+      en: [average daily sales, daily average, average sales per day]
+      hu: [napi átlag, átlagos napi forgalom, átlagos napi árbevétel]
+    type: ratio
+    numerator: SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate)
+    denominator: COUNT(DISTINCT f.sales_date)
+    base_table: fact_sales
+    requires: [store, fx]
+    mandatory_filters: [NOT f.is_cancelled, NOT s.is_test_store]
+    source: decision:7

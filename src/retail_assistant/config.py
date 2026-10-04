@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     Attributes:
         db_path: The DuckDB file with the synthetic data (env: RETAIL_DB_PATH).
         config_dir: Folder with models.yaml, users.yaml and the prompts (RETAIL_CONFIG_DIR).
+        semantic_dir: Folder with the semantic layer YAML files (RETAIL_SEMANTIC_DIR).
         model_profile: Name of the default profile in models.yaml (RETAIL_MODEL_PROFILE).
         anthropic_api_key: API key (env: ANTHROPIC_API_KEY). Optional here, because the
             Anthropic SDK can also find credentials by itself.
@@ -42,6 +43,7 @@ class Settings(BaseSettings):
 
     db_path: Path = PROJECT_ROOT / "data" / "retail.duckdb"
     config_dir: Path = PROJECT_ROOT / "config"
+    semantic_dir: Path = PROJECT_ROOT / "semantic"
     model_profile: str = "claude_small"
     # The alias bypasses the RETAIL_ prefix: the key keeps its standard name.
     anthropic_api_key: SecretStr | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")

@@ -87,6 +87,7 @@ def ask(
     db_path: Path,
     prompts_dir: Path,
     as_of: dt.date,
+    semantic_dir: Path | None = None,
 ) -> Answer:
     """Answer one question.
 
@@ -94,12 +95,13 @@ def ask(
         question: The business question in natural language.
         user: Who asks. Day 3: only "carla" (sees all stores) is supported.
         lang: Language of the question.
-        mode: "naive" (schema only) or "semantic".
+        mode: "naive" (schema only), "commented" or "semantic".
         llm: The model client (real or fake).
         profile: Model profile, used for the cost calculation.
         db_path: The DuckDB file.
         prompts_dir: Folder with the versioned prompt files.
         as_of: What "today" means for relative dates such as "last month".
+        semantic_dir: Folder with the semantic layer files; needed for the "semantic" mode.
 
     Returns:
         An `Answer`. Model and SQL failures do not raise; they become a status, because the
@@ -115,7 +117,7 @@ def ask(
         raise ValueError(f"user '{user}' is not supported before day 5 (per-user access)")
 
     version = prompt_version(mode)
-    system = build_system_prompt(mode, db_path, prompts_dir)
+    system = build_system_prompt(mode, db_path, prompts_dir, semantic_dir)
 
     try:
         generated = llm.generate(

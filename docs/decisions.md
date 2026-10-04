@@ -298,3 +298,32 @@ the Hungarian one. Growth cases 037, 041 and 042 handle a zero or missing base: 
 **Deliberately unchanged.** The `default_assumption` tags remain inconsistently applied
 across older and newer cases. The 15 tagged cases are a registered composition; changing
 it requires a new suite version, not a silent relabelling.
+
+
+## Decision 12: semantic layer as four traceable YAML files
+
+**Context.** The semantic layer must beat the commented baseline by definitions, not by
+being a second copy of the golden set. It is therefore written from the shared business
+contract and the design decisions only, never from sealed cases.
+
+**Decision.** `semantic/` holds `metrics.yaml`, `rules.yaml`, `joins.yaml` and
+`examples.yaml`. Each file has a `version` (increased with every iteration) and every
+metric, rule, join and example has a mandatory `source`: `contract:<section>` or
+`decision:<number>`. A test checks that the section or decision exists. A rule that is in
+neither document is not added. The eval report header prints the version and SHA-256 of
+each file. The semantic prompt (`sql_semantic_v1`) is the commented prompt plus the rendered
+layer, so semantic minus commented measures the layer and nothing else. The five examples
+are written from the contract and a test rejects overlap with the development suite.
+Nothing writes to `data/retail.duckdb`: no view, no table; the layer only describes SQL.
+
+**Alternatives considered.** A metric-to-SQL compiler (dbt/MetricFlow style): too large for
+the time budget and harder to explain. One `rules` list inside `metrics.yaml`: rules such as
+the fiscal calendar or refusal behaviour are not measures, so they got their own file.
+
+**Consequences.** Gaps in the contract stay gaps. Known gap: the meaning of relative
+periods other than year-to-date ("last month", "last week") is not defined in the contract
+and is therefore not in the layer (see decision 14). The `store`, `product` and `date` joins
+are properties of the data model, not business rules, so they use a third source type,
+`schema:<table>.<column>`, naming their key column; a test checks that the column exists.
+YAML 1.1 reads a bare `on` key as boolean
+true, so the join condition field is called `condition`.

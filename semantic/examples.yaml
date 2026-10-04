@@ -1,0 +1,88 @@
+# Verified question -> SQL pairs for the hardest rules. They are written from the business
+# contract, not from the development cases; a test checks that they do not overlap with the
+# development suite. Each SQL statement is executed against the database by the test suite.
+version: 1
+examples:
+  - id: ex_net_sales_with_returns
+    question: What were the net sales in euro in the Wien region in the second quarter of 2024?
+    demonstrates: [net_sales_eur, net_sales_definition, exclude_cancelled_and_test, fx_rate_direction]
+    source: contract:Measures
+    sql: |
+      SELECT SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) AS net_sales_eur
+      FROM fact_sales f
+      JOIN dim_store s ON s.store_id = f.store_id
+      JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+      WHERE NOT f.is_cancelled
+        AND NOT s.is_test_store
+        AND s.region_name = 'Wien'
+        AND f.sales_date >= DATE '2024-04-01'
+        AND f.sales_date < DATE '2024-07-01'
+
+  - id: ex_basket_as_ratio
+    question: What was the average basket in euro per region in Hungary in March 2025?
+    demonstrates: [avg_basket_eur, sales_receipt_measures, ratios_from_sums]
+    source: contract:Measures
+    sql: |
+      SELECT s.region_name,
+             SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate)
+               / COUNT(DISTINCT f.receipt_id) AS avg_basket_eur
+      FROM fact_sales f
+      JOIN dim_store s ON s.store_id = f.store_id
+      JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+      WHERE NOT f.is_cancelled
+        AND NOT f.is_return
+        AND NOT s.is_test_store
+        AND s.country_code = 'HU'
+        AND f.sales_date >= DATE '2025-03-01'
+        AND f.sales_date < DATE '2025-04-01'
+      GROUP BY s.region_name
+      ORDER BY s.region_name
+
+  - id: ex_fiscal_quarters
+    question: How many units did we sell in each fiscal quarter of fiscal year 2024?
+    demonstrates: [units_sold, calendar_vs_fiscal]
+    source: contract:Time, coverage and comparisons
+    sql: |
+      SELECT (d.fiscal_month - 1) // 3 + 1 AS fiscal_quarter,
+             SUM(f.quantity) AS units_sold
+      FROM fact_sales f
+      JOIN dim_store s ON s.store_id = f.store_id
+      JOIN dim_date d ON d.date = f.sales_date
+      WHERE NOT f.is_cancelled
+        AND NOT f.is_return
+        AND NOT s.is_test_store
+        AND d.fiscal_year = 2024
+      GROUP BY fiscal_quarter
+      ORDER BY fiscal_quarter
+
+  - id: ex_gross_sales_fx_division
+    question: What were the gross sales in euro per country in the second half of 2023?
+    demonstrates: [gross_sales_eur, reporting_currency_eur, fx_rate_direction]
+    source: contract:Measures
+    sql: |
+      SELECT s.country_code,
+             SUM(f.gross_amount / fx.eur_rate) AS gross_sales_eur
+      FROM fact_sales f
+      JOIN dim_store s ON s.store_id = f.store_id
+      JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+      WHERE NOT f.is_cancelled
+        AND NOT s.is_test_store
+        AND f.sales_date >= DATE '2023-07-01'
+        AND f.sales_date < DATE '2024-01-01'
+      GROUP BY s.country_code
+      ORDER BY s.country_code
+
+  - id: ex_net_sales_in_forint
+    question: What were the net sales in forint in Hungary in January 2026?
+    demonstrates: [net_sales_local, reporting_currency_eur]
+    source: contract:Measures
+    sql: |
+      SELECT SUM(f.gross_amount - f.discount_amount - f.vat_amount) AS net_sales_huf
+      FROM fact_sales f
+      JOIN dim_store s ON s.store_id = f.store_id
+      WHERE NOT f.is_cancelled
+        AND NOT s.is_test_store
+        AND f.currency = 'HUF'
+        AND s.country_code = 'HU'
+        AND f.sales_date >= DATE '2026-01-01'
+        AND f.sales_date < DATE '2026-02-01'

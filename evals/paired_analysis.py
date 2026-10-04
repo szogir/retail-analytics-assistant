@@ -92,6 +92,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("before", type=Path)
     parser.add_argument("after", type=Path)
+    parser.add_argument(
+        "--diagnostic",
+        action="store_true",
+        help="allow two runs of the DEVELOPMENT suite; the output is labelled diagnostic and "
+        "is never a confirmatory result",
+    )
     args = parser.parse_args()
     before = json.loads(args.before.read_text(encoding="utf-8"))
     after = json.loads(args.after.read_text(encoding="utf-8"))
@@ -112,12 +118,20 @@ def main() -> None:
     ):
         if before["info"].get(key) != after["info"].get(key):
             raise ValueError(f"Run configurations differ: {key}")
-    if before["info"].get("suite") != "holdout":
-        raise ValueError("Confirmatory analysis requires the frozen holdout suite")
-    if not before["info"].get("holdout_verified") or not before["info"].get(
-        "holdout_manifest_hash"
-    ):
-        raise ValueError("Confirmatory analysis requires a verified public holdout commitment")
+    # Design note: the confirmatory rules stay exactly as preregistered. The diagnostic path is
+    # a separate, explicitly opt-in branch for the development suite whose output says so;
+    # the alternative, loosening the holdout checks, could turn a development number into
+    # something that looks confirmatory.
+    diagnostic = args.diagnostic and before["info"].get("suite") == "development"
+    if args.diagnostic and not diagnostic:
+        raise ValueError("--diagnostic is only for runs of the development suite")
+    if not diagnostic:
+        if before["info"].get("suite") != "holdout":
+            raise ValueError("Confirmatory analysis requires the frozen holdout suite")
+        if not before["info"].get("holdout_verified") or not before["info"].get(
+            "holdout_manifest_hash"
+        ):
+            raise ValueError("Confirmatory analysis requires a verified public holdout commitment")
     result = paired_bootstrap(
         [CaseResult(**r) for r in before["results"]], [CaseResult(**r) for r in after["results"]]
     )
@@ -126,10 +140,23 @@ def main() -> None:
             "The registered holdout primary analysis requires every recorded data case"
         )
     comparison = f"{after['info']['mode']} minus {before['info']['mode']}"
-    confirmatory = (before["info"]["mode"], after["info"]["mode"]) == ("commented", "semantic")
+    confirmatory = (before["info"]["mode"], after["info"]["mode"]) == (
+        "commented",
+        "semantic",
+    ) and not diagnostic
+    estimate = asdict(result)
+    label: dict[str, object] = {}
+    if diagnostic:
+        # The success rule belongs to the holdout; showing it for development data would
+        # invite reading a diagnostic number as a claim.
+        del estimate["meets_success_rule"]
+        label = {
+            "label": "DIAGNOSTIC (development suite): not confirmatory, no success-rule verdict"
+        }
     print(
         json.dumps(
-            {"comparison": comparison, "confirmatory": confirmatory, **asdict(result)}, indent=2
+            {"comparison": comparison, "confirmatory": confirmatory, **label, **estimate},
+            indent=2,
         )
     )
 

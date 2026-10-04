@@ -31,6 +31,7 @@ from evals.provenance import case_hash, file_hash, require_frozen
 from evals.report import (
     CaseResult,
     RunInfo,
+    baseline_from_run_file,
     load_baseline,
     render_report,
     save_baseline,
@@ -44,6 +45,7 @@ from retail_assistant.llm.profiles import ModelProfile
 from retail_assistant.llm.schemas import SqlAnswer
 from retail_assistant.pipeline import MAX_OUTPUT_TOKENS, Answer, Language, ask
 from retail_assistant.semantic.context import Mode, build_system_prompt, prompt_version
+from retail_assistant.semantic.loader import load_semantic_layer
 from retail_assistant.sql.executor import QueryResult, execute_query
 
 EVALS_DIR = Path(__file__).parent
@@ -119,6 +121,7 @@ def run_evaluation(
     db_path: Path,
     prompts_dir: Path,
     languages: Sequence[Language],
+    semantic_dir: Path | None = None,
 ) -> list[CaseResult]:
     """Ask every question of every case and grade the answers.
 
@@ -126,10 +129,11 @@ def run_evaluation(
         cases: The golden cases.
         llm: The model client (real, or a fake in tests).
         profile: Model profile, used for the cost.
-        mode: "naive" or "semantic".
+        mode: "naive", "commented" or "semantic".
         db_path: The DuckDB file.
         prompts_dir: Folder with the versioned prompt files.
         languages: Which question languages to ask.
+        semantic_dir: Folder with the semantic files; needed for the "semantic" mode.
 
     Returns:
         One graded result per (case, language) that has a question text.
@@ -153,6 +157,7 @@ def run_evaluation(
                 db_path=db_path,
                 prompts_dir=prompts_dir,
                 as_of=case.as_of_date,
+                semantic_dir=semantic_dir,
             )
             strict, lenient = grade(case, answer, reference)
             results.append(
@@ -188,6 +193,10 @@ def main(
     limit: Annotated[int, typer.Option(min=0, help="only the first N cases (0 = all)")] = 0,
     suite: Annotated[str, typer.Option(help="development or holdout")] = "development",
     repetitions: Annotated[int, typer.Option(min=1, max=3)] = 1,
+    compare_to: Annotated[
+        Path | None,
+        typer.Option(help="Run dump (.json) of an earlier run to list improved/regressed against"),
+    ] = None,
     holdout_dir: Annotated[
         Path | None, typer.Option(help="External holdout path (or HOLDOUT_DIR)")
     ] = None,
@@ -225,6 +234,10 @@ def main(
     if limit:
         cases = cases[:limit]
     prompts_dir = settings.config_dir / "prompts"
+    # Only the semantic mode reads the semantic files; the other modes must not be affected
+    # by them, so their run info carries no semantic fingerprint.
+    semantic_dir = settings.semantic_dir if run_mode == "semantic" else None
+    layer = load_semantic_layer(semantic_dir) if semantic_dir is not None else None
 
     info = RunInfo(
         mode=mode,
@@ -238,7 +251,7 @@ def main(
         case_hash=case_hash(cases),
         database_hash=file_hash(settings.db_path),
         prompt_hash=hashlib.sha256(
-            build_system_prompt(run_mode, settings.db_path, prompts_dir).encode()
+            build_system_prompt(run_mode, settings.db_path, prompts_dir, semantic_dir).encode()
         ).hexdigest(),
         repetitions=repetitions,
         config_hash=file_hash(settings.config_dir / "models.yaml"),
@@ -251,11 +264,21 @@ def main(
         holdout_manifest_hash=manifest_hash,
         holdout_verified=bool(manifest_hash),
         data_case_count=sum(c.expected.kind in ("result", "result_scoped") for c in cases),
+        semantic_files=layer.file_hashes if layer else {},
+        semantic_versions=layer.file_versions if layer else {},
     )
     output_dir = directory / "artifacts"
     output_dir.mkdir(parents=True, exist_ok=True)
     baseline_path = output_dir / f"{setup.profile.name}_baseline.json"
-    baseline = load_baseline(baseline_path, info)
+    # Design note: --compare-to replaces the profile baseline file. The alternative, comparing
+    # to both, would mix two different questions ("versus the first naive run" and "versus the
+    # previous mode") in one section.
+    if compare_to is not None:
+        baseline: dict[str, dict[str, object]] | None = baseline_from_run_file(compare_to, info)
+        baseline_label = f"earlier run {compare_to.name}"
+    else:
+        baseline = load_baseline(baseline_path, info)
+        baseline_label = "baseline"
     # Validate identities before incurring model-call costs. The immutable run dump
     # is written before the convenience report, so a reporting error loses no results.
     typer.echo(f"Running {len(cases)} cases, mode={mode}, profile={setup.profile.name} ...")
@@ -269,6 +292,7 @@ def main(
             db_path=settings.db_path,
             prompts_dir=prompts_dir,
             languages=languages,
+            semantic_dir=semantic_dir,
         )
         results.extend(replace(result, repeat=repeat) for result in batch)
     report_path = output_dir / "latest.md"
@@ -283,7 +307,9 @@ def main(
         json.dumps({"info": asdict(info), "results": [asdict(r) for r in results]}, indent=2),
         encoding="utf-8",
     )
-    report_path.write_text(render_report(info, results, baseline, len(cases)), encoding="utf-8")
+    report_path.write_text(
+        render_report(info, results, baseline, len(cases), baseline_label), encoding="utf-8"
+    )
 
     if save_baseline_flag:
         save_baseline(baseline_path, info, results)

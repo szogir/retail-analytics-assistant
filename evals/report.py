@@ -87,6 +87,9 @@ class RunInfo:
     holdout_manifest_hash: str = ""
     holdout_verified: bool = False
     data_case_count: int = 0
+    # Semantic mode only: SHA-256 and version of each semantic YAML file (empty otherwise).
+    semantic_files: dict[str, str] = field(default_factory=dict)
+    semantic_versions: dict[str, int] = field(default_factory=dict)
 
 
 def percentile(values: Sequence[float], fraction: float) -> float:
@@ -168,31 +171,81 @@ def save_baseline(path: Path, info: RunInfo, results: Sequence[CaseResult]) -> N
     path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+# Run settings that must be identical for two runs to be comparable. The prompt, mode and
+# semantic files are deliberately NOT here: they are the things an experiment changes.
+_COMPARABLE_KEYS = (
+    "suite",
+    "case_hash",
+    "database_hash",
+    "scoring_version",
+    "repetitions",
+    "model",
+    "max_tokens",
+    "config_hash",
+    "scoring_hash",
+    "schema_hash",
+    "data_case_count",
+    "holdout_manifest_hash",
+    "holdout_verified",
+)
+
+
+def _require_comparable(recorded: dict[str, object], info: RunInfo) -> None:
+    """Raise if an earlier run was made with different settings than the current one."""
+    for key in _COMPARABLE_KEYS:
+        if recorded.get(key) != getattr(info, key):
+            raise ValueError(f"Incompatible baseline: {key}")
+
+
 def load_baseline(path: Path, info: RunInfo | None = None) -> dict[str, dict[str, object]] | None:
     """Read the `results` object of the baseline file, or None if there is no baseline yet."""
     if not path.is_file():
         return None
     document = json.loads(path.read_text(encoding="utf-8"))
     if info is not None:
-        for key in (
-            "suite",
-            "case_hash",
-            "database_hash",
-            "scoring_version",
-            "repetitions",
-            "model",
-            "max_tokens",
-            "config_hash",
-            "scoring_hash",
-            "schema_hash",
-            "data_case_count",
-            "holdout_manifest_hash",
-            "holdout_verified",
-        ):
-            if document["info"].get(key) != getattr(info, key):
-                raise ValueError(f"Incompatible baseline: {key}")
+        _require_comparable(document["info"], info)
     results: dict[str, dict[str, object]] = document["results"]
     return results
+
+
+def baseline_from_run_file(path: Path, info: RunInfo) -> dict[str, dict[str, object]]:
+    """Turn a saved run dump into a per-question baseline for the improved/regressed lists.
+
+    Why: the main question is "what changed compared with the previous mode", for example
+    semantic versus commented. A run dump already holds every graded question, so it can be
+    the reference directly, without a separate baseline file.
+
+    Args:
+        path: A ``<timestamp>_<mode>_<profile>.json`` file written by the eval runner.
+        info: The current run; the old run must have been made with identical settings.
+
+    Returns:
+        Outcomes keyed like ``004:hu`` (``004:hu:r2`` for repetition 2).
+
+    Raises:
+        ValueError: If the earlier run used different settings (case set, database, model,
+            scoring, ...), because a comparison would then be misleading.
+    """
+    document = json.loads(path.read_text(encoding="utf-8"))
+    _require_comparable(document["info"], info)
+    outcomes: dict[str, dict[str, object]] = {}
+    for raw in document["results"]:
+        result = CaseResult(**raw)
+        outcomes[result.key] = {
+            "strict": result.strict,
+            "lenient": result.lenient,
+            "primary": result.primary,
+            "status": result.status,
+        }
+    return outcomes
+
+
+def _semantic_header(info: RunInfo) -> list[str]:
+    """Header lines naming the exact semantic files (version and SHA-256) behind a run."""
+    return [
+        f"- Semantic file `{name}` v{info.semantic_versions.get(name, '?')} SHA-256: `{digest}`"
+        for name, digest in sorted(info.semantic_files.items())
+    ]
 
 
 def _percent(part: int, whole: int) -> str:
@@ -204,6 +257,7 @@ def render_report(
     results: Sequence[CaseResult],
     baseline: dict[str, dict[str, object]] | None,
     case_count: int,
+    baseline_label: str = "baseline",
 ) -> str:
     """Build the Markdown report.
 
@@ -212,6 +266,8 @@ def render_report(
         results: Graded results, one per question asked.
         baseline: Baseline outcomes to compare with, or None.
         case_count: Number of golden cases in the set (a question is asked per language).
+        baseline_label: What the baseline is, shown in the heading (for example
+            "earlier run 20261004-212942_commented_claude_small.json").
 
     Returns:
         The report text.
@@ -240,6 +296,7 @@ def render_report(
         f"- Prompt SHA-256: `{info.prompt_hash}`",
         f"- Model configuration SHA-256: `{info.config_hash}`",
         f"- Scoring SHA-256: `{info.scoring_hash}`; output schema SHA-256: `{info.schema_hash}`",
+        *_semantic_header(info),
         "",
         "## Accuracy",
         "",
@@ -304,7 +361,7 @@ def render_report(
         f"- Cost per question: ${total_cost / total if total else 0:.5f}",
         f"- Total cost of the run: ${total_cost:.4f}",
         "",
-        "## Versus baseline",
+        f"## Versus {baseline_label}",
         "",
     ]
     if baseline is None:

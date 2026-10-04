@@ -59,9 +59,9 @@ def test_naive_prompt_has_the_schema_and_no_business_rules(tiny_db: Path) -> Non
     assert prompt_version("naive") == "sql_naive_v1"
 
 
-def test_semantic_mode_is_not_available_yet(tiny_db: Path) -> None:
+def test_an_unknown_mode_has_no_prompt() -> None:
     with pytest.raises(NotImplementedError):
-        build_system_prompt("semantic", tiny_db, PROMPTS_DIR)
+        prompt_version("nonsense")  # type: ignore[arg-type]
 
 
 def test_user_prompt_carries_the_date_and_question() -> None:
