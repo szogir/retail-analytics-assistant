@@ -15,8 +15,10 @@ Usage:
 
 import datetime as dt
 import hashlib
+import inspect
 import json
 import re
+import sys
 from collections.abc import Sequence
 from dataclasses import asdict, replace
 from pathlib import Path
@@ -27,7 +29,7 @@ import typer
 from evals.compare import compare_tables
 from evals.golden import GoldenCase, load_golden_set
 from evals.holdout_commitment import verify_commitment
-from evals.provenance import case_hash, file_hash, require_frozen
+from evals.provenance import case_hash, file_hash, require_frozen, source_fingerprint
 from evals.report import (
     CaseResult,
     RunInfo,
@@ -54,6 +56,31 @@ BASELINE_PATH = EVALS_DIR / "baseline.json"
 RUNS_DIR = EVALS_DIR / "runs"
 
 app = typer.Typer(add_completion=False, help="Run the golden-set evaluation.")
+
+# The functions whose logic decides whether an answer counts as correct. Together with
+# compare.py (table matching and tolerances) they define the "scoring" of a run.
+SCORING_FUNCTIONS = ("grade", "assumptions_match", "grade_primary")
+
+
+def scoring_hash() -> str:
+    """Fingerprint the code that decides correctness, and nothing else.
+
+    Why: two runs are only comparable if they were graded by the same logic. The old hash
+    covered the whole of this file, so adding a command-line option (no effect on grading)
+    invalidated every earlier run. Now only the grading functions and compare.py count.
+
+    Design note: the alternative, hashing the whole file, is safer against forgotten
+    dependencies but makes unrelated edits break comparisons. `run_evaluation` is not
+    included either: it only passes values to these functions, and tests cover it. The
+    output schema has its own hash (`schema_hash`) in the run info.
+
+    Returns:
+        A SHA-256 hex digest of the syntax trees of the scoring code.
+    """
+    this_module = sys.modules[__name__]
+    sources = [inspect.getsource(getattr(this_module, name)) for name in SCORING_FUNCTIONS]
+    sources.append((EVALS_DIR / "compare.py").read_text(encoding="utf-8"))
+    return source_fingerprint(sources)
 
 
 def grade(case: GoldenCase, answer: Answer, reference: QueryResult | None) -> tuple[bool, bool]:
@@ -255,9 +282,7 @@ def main(
         ).hexdigest(),
         repetitions=repetitions,
         config_hash=file_hash(settings.config_dir / "models.yaml"),
-        scoring_hash=hashlib.sha256(
-            (file_hash(Path(__file__)) + file_hash(EVALS_DIR / "compare.py")).encode()
-        ).hexdigest(),
+        scoring_hash=scoring_hash(),
         schema_hash=hashlib.sha256(
             json.dumps(SqlAnswer.model_json_schema(), sort_keys=True).encode()
         ).hexdigest(),

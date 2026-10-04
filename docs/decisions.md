@@ -327,3 +327,27 @@ are properties of the data model, not business rules, so they use a third source
 `schema:<table>.<column>`, naming their key column; a test checks that the column exists.
 YAML 1.1 reads a bare `on` key as boolean
 true, so the join condition field is called `condition`.
+
+
+## Decision 13: the scoring hash covers grading logic only
+
+**Context.** Two runs may be compared (improved/regressed lists, paired analysis) only if
+the same logic graded them. The run info recorded a scoring hash computed from the whole
+`run_eval.py` file plus `compare.py`. Adding a command-line option therefore invalidated
+every earlier run, although no answer would have been graded differently.
+
+**Decision.** `scoring_hash()` fingerprints the syntax trees (not the text) of `grade`,
+`assumptions_match`, `grade_primary` and the whole of `compare.py` (table matching and
+tolerances). Comments, whitespace and line endings do not change it; any change of logic
+does. The output schema keeps its own hash (`schema_hash`), which is also compared.
+Tests show that changing a grading function or the tolerance changes the hash and that
+replacing `main` or `run_evaluation` does not.
+
+**Alternatives considered.** Hashing the whole file: safer against forgotten dependencies,
+but unrelated edits break comparisons. Including `run_evaluation`: it only passes values
+to the grading functions, and the runner tests cover it, so wiring edits stay free.
+
+**Consequences.** Runs made before this change have a hash of the old kind and are not
+comparable with new runs (they were rerun for that reason). A change in `run_evaluation`
+that altered how results are assembled would not be seen by the hash; review such a change
+by hand. A docstring edit inside a scoring function counts as a change (safe side).

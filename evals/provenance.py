@@ -4,8 +4,10 @@ This evaluation-only module prevents a changed case set from silently reusing an
 old baseline. A hash proves content identity, not authorship or external timing.
 """
 
+import ast
 import hashlib
 import json
+import textwrap
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -18,6 +20,28 @@ def file_hash(path: Path) -> str:
     with path.open("rb") as source:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
+    return digest.hexdigest()
+
+
+def source_fingerprint(sources: Sequence[str]) -> str:
+    """Hash Python source code by its syntax tree, not by its text.
+
+    Why: the scoring hash must change when scoring LOGIC changes and stay the same when
+    only formatting, comments or line endings change (a Windows checkout has CRLF, a Linux
+    one LF). Parsing into a syntax tree and hashing its dump removes exactly those
+    differences. A docstring is part of the tree, so editing one counts as a change; that
+    errs on the safe side.
+
+    Args:
+        sources: Python source text of each scoring function or module, in a fixed order.
+
+    Returns:
+        A SHA-256 hex digest.
+    """
+    digest = hashlib.sha256()
+    for source in sources:
+        digest.update(ast.dump(ast.parse(textwrap.dedent(source))).encode())
+        digest.update(b"|")  # separator, so moving code between two sources changes the hash
     return digest.hexdigest()
 
 
