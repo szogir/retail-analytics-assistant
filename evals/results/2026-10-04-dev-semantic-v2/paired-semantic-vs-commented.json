@@ -1,0 +1,11 @@
+{
+  "comparison": "semantic minus commented",
+  "confirmatory": false,
+  "label": "DIAGNOSTIC (development suite): not confirmatory, no success-rule verdict",
+  "cases": 40,
+  "difference": 0.6833333333333333,
+  "lower": 0.5333333333333334,
+  "upper": 0.8208333333333334,
+  "bootstrap_samples": 10000,
+  "seed": 42
+}
