@@ -25,5 +25,5 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        # These generated manifests contain verified SHA-256 digests, not credentials.
-        exclude: ^(?:uv\.lock|evals/golden_set/candidate\.json|evals/golden_set/frozen\.json|evals/holdout_manifest\.json)$
+        # These generated manifests and run files contain SHA-256 digests, not credentials.
+        exclude: ^(?:uv\.lock|evals/golden_set/candidate\.json|evals/golden_set/frozen\.json|evals/holdout_manifest\.json|evals/results/.*\.json)$

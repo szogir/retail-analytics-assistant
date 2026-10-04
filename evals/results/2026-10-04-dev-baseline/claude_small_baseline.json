@@ -1,0 +1,1827 @@
+{
+  "case_count": 50,
+  "info": {
+    "case_hash": "c8a7d537145a97b1795e61f49cc097f03e5e92e4b01884bdc36d58e11f0849fd",
+    "config_hash": "17c53d78e08cbd10769139e5f329ed66827358a749a054747cd4063fd0c34b46",
+    "data_case_count": 40,
+    "database_hash": "741bd4c18d8f81433565e2cd96edfe5751283f914753583fdbb82a91188df965",
+    "holdout_manifest_hash": "",
+    "holdout_verified": false,
+    "max_tokens": 4096,
+    "mode": "naive",
+    "model": "claude-haiku-4-5",
+    "price_date": "2026-10-04",
+    "profile": "claude_small",
+    "prompt_hash": "21c6c86f8dd2a06940681d699255ae2a21299d1fb08fef119225dfcbb8bbf217",
+    "prompt_version": "sql_naive_v1",
+    "repetitions": 3,
+    "run_date": "2026-10-04",
+    "schema_hash": "78eae2676e93a7cf799d5b5dabbdc6b6e05cf32b1e1201e77eaaf2ce10ecf5ed",
+    "scoring_hash": "c0d753af76d686c3f4b27edf7af67d14fd9ef4dbabce5d5c1edcdc41d052b92b",
+    "scoring_version": "execution_v2",
+    "suite": "development"
+  },
+  "question_count": 300,
+  "results": {
+    "001:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "001:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "001:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "001:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "001:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "001:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "002:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "002:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "002:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "002:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "002:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "002:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "003:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "003:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "003:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "003:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "003:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "003:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "004:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "004:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "004:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "004:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "004:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "004:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "005:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "005:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "005:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "005:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "005:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "005:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "006:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "006:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "006:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "006:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "006:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "006:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "007:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "007:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "007:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "007:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "007:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "007:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "008:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "008:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "008:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "008:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "008:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "008:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "009:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "009:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "009:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "009:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "009:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "009:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "010:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "010:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "010:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "010:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "010:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "010:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "011:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "011:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "011:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "011:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "011:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "011:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "012:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "012:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "012:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "012:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "012:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "012:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "013:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "013:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "013:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "013:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "013:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "013:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "014:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "014:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "014:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "014:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "014:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "014:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "015:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "015:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "015:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "015:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "015:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "015:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "016:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "016:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "016:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "016:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "016:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "016:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "017:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "017:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "017:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "017:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "017:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "017:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "018:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "018:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "018:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "018:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "018:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "018:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "019:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "019:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "019:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "019:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "019:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": false
+    },
+    "019:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "020:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "020:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "020:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "020:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "020:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "020:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "021:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "021:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "021:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "021:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "021:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "021:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "022:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "022:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "022:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "022:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "022:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "022:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "023:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "023:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "023:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "023:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "023:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "023:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "024:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "024:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "024:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "024:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "024:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "024:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "025:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "025:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "025:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "025:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "025:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "025:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "026:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "026:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "026:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "026:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "026:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "026:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "027:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "027:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "027:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "027:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "027:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "027:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "028:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "028:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "028:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "028:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "028:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "028:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "refused",
+      "strict": true
+    },
+    "029:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "029:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "029:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "029:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "029:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "029:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "030:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "030:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "030:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "030:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "030:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "030:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "031:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "031:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "031:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "031:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "031:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "031:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "032:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "032:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "032:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "032:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "032:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "032:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "033:en": {
+      "lenient": true,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "033:en:r2": {
+      "lenient": true,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "033:en:r3": {
+      "lenient": true,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "033:hu": {
+      "lenient": true,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "033:hu:r2": {
+      "lenient": true,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "033:hu:r3": {
+      "lenient": true,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "034:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "034:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "034:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "034:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "034:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "034:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "035:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "035:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "035:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "035:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "035:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "035:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "036:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "036:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "036:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "036:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "036:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "036:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "037:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "037:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "037:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "037:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "037:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "037:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "038:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "038:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "038:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "038:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "038:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "038:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "039:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "039:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "039:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "039:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "039:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "sql_error",
+      "strict": false
+    },
+    "039:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "040:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "040:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "040:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "040:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "040:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "040:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "041:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "041:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "041:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "041:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "041:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "041:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "042:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "042:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "042:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "042:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "042:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "042:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "043:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "043:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "043:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "043:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "043:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "043:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "044:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "044:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "044:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "044:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "clarification",
+      "strict": false
+    },
+    "044:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "clarification",
+      "strict": false
+    },
+    "044:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "clarification",
+      "strict": false
+    },
+    "045:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "045:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "045:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "045:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "045:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "045:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "046:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "046:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "046:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "046:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "046:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "046:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "answered",
+      "strict": true
+    },
+    "047:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "047:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "047:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "047:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "047:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "047:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "048:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "048:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "048:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "048:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "048:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "048:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "049:en": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "049:en:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "049:en:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "049:hu": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "049:hu:r2": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "049:hu:r3": {
+      "lenient": false,
+      "primary": false,
+      "status": "answered",
+      "strict": false
+    },
+    "050:en": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "050:en:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "050:en:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "050:hu": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "050:hu:r2": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    },
+    "050:hu:r3": {
+      "lenient": true,
+      "primary": true,
+      "status": "clarification",
+      "strict": true
+    }
+  }
+}
