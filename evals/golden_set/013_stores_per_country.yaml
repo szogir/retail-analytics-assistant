@@ -17,3 +17,6 @@ reference_sql: |
   WHERE NOT is_test_store
   GROUP BY country_code
   ORDER BY country_code
+reviewed: false
+reviewed_on: null
+reviewed_by: null

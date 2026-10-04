@@ -12,3 +12,6 @@ notes: >
   Ambiguous on purpose: nothing in the data defines a "large" store (floor area is not
   stored, and sales volume is no definition), and the time period is missing as well. The
   right behaviour is to ask what "large" means instead of inventing a threshold.
+reviewed: false
+reviewed_on: null
+reviewed_by: null

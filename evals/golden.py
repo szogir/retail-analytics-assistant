@@ -14,11 +14,12 @@ the assistant and compares result tables with the reference SQL result).
 from __future__ import annotations
 
 import datetime as dt
+import re
 from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 GOLDEN_SET_DIR = Path(__file__).parent / "golden_set"
 
@@ -75,6 +76,13 @@ class GoldenCase(BaseModel):
     reference_sql: str | None = None
     order_sensitive: bool = False
     notes: str = ""
+    tags: list[str] = Field(default_factory=list)
+    reviewed: bool = False
+    reviewed_on: dt.date | None = None
+    reviewed_by: str | None = None
+    # Each pattern is an independently required topic in the assumptions text.
+    assumption_patterns: dict[str, list[str]] = Field(default_factory=dict)
+    answer_shape: Literal["nonempty", "empty", "null"] = "nonempty"
 
     @model_validator(mode="after")
     def _reference_sql_matches_kind(self) -> GoldenCase:
@@ -84,6 +92,23 @@ class GoldenCase(BaseModel):
             raise ValueError(f"case {self.id}: kind '{self.expected.kind}' needs reference_sql")
         if not expects_table and self.reference_sql:
             raise ValueError(f"case {self.id}: kind '{self.expected.kind}' must not have SQL")
+        if self.reviewed != bool(self.reviewed_on and self.reviewed_by):
+            raise ValueError(
+                "reviewed requires both reviewed_on and reviewed_by; pending uses nulls"
+            )
+        if not self.reviewed and (self.reviewed_on or self.reviewed_by):
+            raise ValueError("pending reviews must not claim a reviewer or date")
+        if "default_assumption" in self.tags and (
+            not expects_table or set(self.assumption_patterns) != {"en", "hu"}
+        ):
+            raise ValueError("default-assumption cases need bilingual assumption checks")
+        if any(not patterns for patterns in self.assumption_patterns.values()):
+            raise ValueError("assumption patterns must not be empty")
+        for patterns in self.assumption_patterns.values():
+            for pattern in patterns:
+                re.compile(pattern)
+        if self.reviewed_by is not None and not self.reviewed_by.strip():
+            raise ValueError("reviewed_by must name the human reviewer")
         return self
 
 

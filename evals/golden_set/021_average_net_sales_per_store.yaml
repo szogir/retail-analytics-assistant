@@ -21,3 +21,6 @@ reference_sql: |
     AND NOT s.is_test_store
     AND f.sales_date >= DATE '2025-01-01'
     AND f.sales_date < DATE '2026-01-01'
+reviewed: false
+reviewed_on: null
+reviewed_by: null

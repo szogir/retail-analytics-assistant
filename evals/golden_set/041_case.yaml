@@ -1,0 +1,68 @@
+id: '041'
+questions:
+  en: Which three stores had the highest percentage growth in net sales in euro from 2024 to 2025? Give
+    store IDs and fractional growth; break ties by ID.
+  hu: Melyik három üzlet nettó árbevétele nőtt a legnagyobb arányban euróban 2024-ről 2025-re? Üzletazonosítót
+    és törtben megadott növekedést kérek; holtversenyben az azonosító döntsön.
+user: carla
+as_of_date: '2026-10-04'
+category: comparison
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    store_id,
+    SUM(net_eur) FILTER(WHERE
+      YEAR(sales_date) = 2025) / NULLIF(SUM(net_eur) FILTER(WHERE
+      YEAR(sales_date) = 2024), 0) - 1 AS growth
+  FROM valid
+  WHERE
+    YEAR(sales_date) IN (2024, 2025)
+  GROUP BY
+    store_id
+  ORDER BY
+    growth DESC,
+    store_id
+  LIMIT 3
+order_sensitive: true
+notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
+  human approval is still pending.
+tags: []
+assumption_patterns: {}
+answer_shape: nonempty
+reviewed: false
+reviewed_on: null
+reviewed_by: null

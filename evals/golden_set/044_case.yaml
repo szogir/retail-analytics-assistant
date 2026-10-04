@@ -1,0 +1,66 @@
+id: '044'
+questions:
+  en: How many valid sales receipts contained both Dairy and Bakery products in 2025?
+  hu: Hány érvényes eladási bizonylaton szerepelt tejtermék és pékáru is 2025-ben?
+user: carla
+as_of_date: '2026-10-04'
+category: composition
+traps:
+- 1
+- 2
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    COUNT(*)
+  FROM (
+    SELECT
+      receipt_id
+    FROM valid
+    WHERE
+      YEAR(sales_date) = 2025 AND NOT is_return
+    GROUP BY
+      receipt_id
+    HAVING
+      COUNT(*) FILTER(WHERE
+        category_en = 'Dairy') > 0
+      AND COUNT(*) FILTER(WHERE
+        category_en = 'Bakery') > 0
+  )
+order_sensitive: false
+notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
+  human approval is still pending.
+tags: []
+assumption_patterns: {}
+answer_shape: nonempty
+reviewed: false
+reviewed_on: null
+reviewed_by: null

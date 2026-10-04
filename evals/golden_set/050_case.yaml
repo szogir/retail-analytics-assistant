@@ -1,0 +1,14 @@
+id: '050'
+questions:
+  en: Compare sales before and after the campaign.
+  hu: Hasonlítsd össze a kampány előtti és utáni forgalmat.
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: Campaign identity and dates are not present. Ask for the comparison windows.
+reviewed: false
+reviewed_on: null
+reviewed_by: null

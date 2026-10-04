@@ -28,3 +28,6 @@ reference_sql: |
     AND f.sales_date < DATE '2026-01-01'
   GROUP BY s.country_code
   ORDER BY s.country_code
+reviewed: false
+reviewed_on: null
+reviewed_by: null

@@ -1,0 +1,61 @@
+id: 039
+questions:
+  en: What were total net sales in euro in 2022?
+  hu: Mennyi volt az összes nettó árbevétel euróban 2022-ben?
+user: carla
+as_of_date: '2026-10-04'
+category: aggregation
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    SUM(net_eur)
+  FROM valid
+  WHERE
+    YEAR(sales_date) = 2022
+order_sensitive: false
+notes: 2022 is outside data coverage. The aggregate is NULL, not zero; assumptions must state that there
+  is no data.
+tags: []
+assumption_patterns:
+  en:
+  - no data|outside.*coverage|not covered
+  hu:
+  - nincs adat|adat.*kívül|nem.*lefed
+answer_shape: 'null'
+reviewed: false
+reviewed_on: null
+reviewed_by: null

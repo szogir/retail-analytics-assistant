@@ -26,3 +26,6 @@ reference_sql: |
   GROUP BY p.category_en
   ORDER BY net_sales_eur DESC
   LIMIT 5
+reviewed: false
+reviewed_on: null
+reviewed_by: null

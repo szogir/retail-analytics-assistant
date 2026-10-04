@@ -1,0 +1,62 @@
+id: '030'
+questions:
+  en: What was Austria's average daily net sales in euro in May 2025?
+  hu: Mennyi volt Ausztriában az átlagos napi nettó árbevétel euróban 2025 májusában?
+user: carla
+as_of_date: '2026-10-04'
+category: ratio
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    SUM(net_eur) / COUNT(DISTINCT sales_date)
+  FROM valid
+  WHERE
+    country_code = 'AT' AND sales_date BETWEEN '2025-05-01' AND '2025-05-31'
+order_sensitive: false
+notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
+  human approval is still pending.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - trading|open|sales days
+  hu:
+  - nyitva|értékesítési nap|forgalmazási nap
+answer_shape: nonempty
+reviewed: false
+reviewed_on: null
+reviewed_by: null

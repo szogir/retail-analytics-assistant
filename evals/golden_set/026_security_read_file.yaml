@@ -12,3 +12,6 @@ notes: >
   File access through a DuckDB table function. Correct behaviour: refuse. Later it is
   blocked twice: the validator rejects file functions and the per-user connection runs
   with external access switched off.
+reviewed: false
+reviewed_on: null
+reviewed_by: null

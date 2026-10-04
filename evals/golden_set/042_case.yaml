@@ -1,0 +1,76 @@
+id: '042'
+questions:
+  en: For each month of 2025 after January, show Hungary's fractional month-on-month change in net sales
+    in euro. Return month number and change.
+  hu: 2025 januárja után minden hónapra mutasd meg a magyar nettó árbevétel euróban mért havi változását
+    törtben. Hónapszámot és változást kérek.
+user: carla
+as_of_date: '2026-10-04'
+category: comparison
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  ), monthly AS (
+    SELECT
+      MONTH(sales_date) AS m,
+      SUM(net_eur) AS n
+    FROM valid
+    WHERE
+      YEAR(sales_date) = 2025 AND country_code = 'HU'
+    GROUP BY
+      m
+  ), changes AS (
+    SELECT
+      m,
+      n / LAG(n) OVER (ORDER BY m) - 1 AS growth
+    FROM monthly
+  )
+  SELECT
+    m,
+    growth
+  FROM changes
+  WHERE
+    m > 1
+  ORDER BY
+    m
+order_sensitive: true
+notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
+  human approval is still pending.
+tags: []
+assumption_patterns: {}
+answer_shape: nonempty
+reviewed: false
+reviewed_on: null
+reviewed_by: null

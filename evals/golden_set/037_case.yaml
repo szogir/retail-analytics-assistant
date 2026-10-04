@@ -1,0 +1,67 @@
+id: '037'
+questions:
+  en: How much did revenue in euro grow by country from 2024 to 2025? Return fractional growth.
+  hu: Mennyivel nőtt országonként az euróban mért bevétel 2024-ről 2025-re? A növekedést törtben add meg.
+user: carla
+as_of_date: '2026-10-04'
+category: comparison
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    country_code,
+    SUM(net_eur) FILTER(WHERE
+      YEAR(sales_date) = 2025) / NULLIF(SUM(net_eur) FILTER(WHERE
+      YEAR(sales_date) = 2024), 0) - 1 AS growth
+  FROM valid
+  WHERE
+    sales_date BETWEEN '2024-01-01' AND '2025-12-31'
+  GROUP BY
+    country_code
+order_sensitive: false
+notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
+  human approval is still pending.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - \bnet\b
+  hu:
+  - nettó
+answer_shape: nonempty
+reviewed: false
+reviewed_on: null
+reviewed_by: null

@@ -12,6 +12,7 @@ import pytest
 from pydantic import ValidationError
 
 from evals.golden import GoldenCase, load_golden_set
+from evals.validate_suite import check_shape
 
 CASES = load_golden_set()
 # Clarification and refusal cases have no reference SQL: their correct answer is no table.
@@ -55,10 +56,7 @@ def test_reference_sql_runs_and_returns_a_value(
 ) -> None:
     assert case.reference_sql is not None
     rows = db.execute(case.reference_sql).fetchall()
-    assert rows, f"case {case.id} returned no rows"
-    assert any(value is not None for row in rows for value in row), (
-        f"case {case.id} returned only NULLs"
-    )
+    check_shape(case, rows)
 
 
 def test_net_sales_of_case_001_are_plausible(db: duckdb.DuckDBPyConnection) -> None:

@@ -1,0 +1,14 @@
+id: 048
+questions:
+  en: Which stores are underperforming?
+  hu: Melyik üzletek teljesítenek gyengén?
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: No metric, period or target for underperformance is specified. Ask rather than invent a threshold.
+reviewed: false
+reviewed_on: null
+reviewed_by: null

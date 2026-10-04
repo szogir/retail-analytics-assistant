@@ -1,0 +1,71 @@
+id: 038
+questions:
+  en: Which country had the higher average basket in euro in 2025? Give country and value.
+  hu: Melyik országban volt magasabb az átlagos kosárérték euróban 2025-ben? Az országot és az értéket
+    kérem.
+user: carla
+as_of_date: '2026-10-04'
+category: ranking
+traps:
+- 1
+- 2
+- 3
+- 4
+- 5
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    country_code,
+    SUM(net_eur) / COUNT(DISTINCT receipt_id) AS basket
+  FROM valid
+  WHERE
+    YEAR(sales_date) = 2025 AND NOT is_return
+  GROUP BY
+    country_code
+  ORDER BY
+    basket DESC,
+    country_code
+  LIMIT 1
+order_sensitive: false
+notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
+  human approval is still pending.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - exclud.*return|without.*return|sales.only
+  hu:
+  - visszáru.*(kizár|nélkül)|visszárut.*nem|csak.*eladás
+answer_shape: nonempty
+reviewed: false
+reviewed_on: null
+reviewed_by: null

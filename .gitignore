@@ -21,6 +21,8 @@ data/*.parquet
 
 # Evaluation run artifacts - only the summary report and baseline are versioned
 evals/runs/
+evals/golden_set/artifacts/
+evals/holdout/artifacts/
 
 # Editors / OS
 .vscode/

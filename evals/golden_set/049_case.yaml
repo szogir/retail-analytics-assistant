@@ -1,0 +1,15 @@
+id: 049
+questions:
+  en: What was the margin last month?
+  hu: Mennyi volt az árrés a múlt hónapban?
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: Costs are unavailable and margin is undefined. Ask whether an available sales measure was intended;
+  never substitute net sales silently.
+reviewed: false
+reviewed_on: null
+reviewed_by: null

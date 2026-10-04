@@ -14,10 +14,12 @@ Where it sits in the pipeline: evaluation only (reporting step of the eval runne
 import datetime as dt
 import json
 import math
+import statistics
 from collections import defaultdict
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -49,11 +51,17 @@ class CaseResult:
     cost_usd: float
     sql: str = ""
     message: str = ""
+    primary: bool = False
+    assumptions_ok: bool = True
+    assumptions: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    repeat: int = 1
 
     @property
     def key(self) -> str:
         """Identifier used in the baseline file, e.g. ``004:hu``."""
-        return f"{self.case_id}:{self.lang}"
+        suffix = f":r{self.repeat}" if self.repeat != 1 else ""
+        return f"{self.case_id}:{self.lang}{suffix}"
 
 
 @dataclass(frozen=True)
@@ -67,6 +75,15 @@ class RunInfo:
     price_date: str
     run_date: str
     max_tokens: int
+    suite: str = "legacy"
+    case_hash: str = ""
+    database_hash: str = ""
+    prompt_hash: str = ""
+    repetitions: int = 1
+    scoring_version: str = "execution_v2"
+    config_hash: str = ""
+    scoring_hash: str = ""
+    schema_hash: str = ""
 
 
 def percentile(values: Sequence[float], fraction: float) -> float:
@@ -100,13 +117,16 @@ def _group_accuracy(
 
 
 def compare_to_baseline(
-    results: Sequence[CaseResult], baseline: dict[str, dict[str, object]]
+    results: Sequence[CaseResult],
+    baseline: dict[str, dict[str, object]],
+    metric: Literal["strict", "primary"] = "strict",
 ) -> tuple[list[str], list[str]]:
-    """List the cases that got better or worse than in the baseline (strict outcome).
+    """List the cases that improved or regressed on the selected outcome.
 
     Args:
         results: The current run.
         baseline: The `results` object of the baseline file, keyed like ``004:hu``.
+        metric: Strict legacy accuracy, or primary execution accuracy on data cases.
 
     Returns:
         (improved keys, regressed keys). Cases that are not in the baseline are ignored.
@@ -114,12 +134,14 @@ def compare_to_baseline(
     improved: list[str] = []
     regressed: list[str] = []
     for result in results:
-        before = baseline.get(result.key)
-        if before is None:
+        if metric == "primary" and result.expected_kind not in ("result", "result_scoped"):
             continue
-        if result.strict and not before["strict"]:
+        before = baseline.get(result.key)
+        if before is None or metric not in before:
+            continue
+        if getattr(result, metric) and not before[metric]:
             improved.append(result.key)
-        elif before["strict"] and not result.strict:
+        elif before[metric] and not getattr(result, metric):
             regressed.append(result.key)
     return improved, regressed
 
@@ -128,19 +150,41 @@ def save_baseline(path: Path, info: RunInfo, results: Sequence[CaseResult]) -> N
     """Write the per-case outcomes of a run as the new baseline (versioned in git)."""
     document = {
         "info": asdict(info),
-        "case_count": len(results),
+        "case_count": len({r.case_id for r in results}),
+        "question_count": len(results),
         "results": {
-            r.key: {"strict": r.strict, "lenient": r.lenient, "status": r.status} for r in results
+            r.key: {
+                "strict": r.strict,
+                "lenient": r.lenient,
+                "primary": r.primary,
+                "status": r.status,
+            }
+            for r in results
         },
     }
     path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def load_baseline(path: Path) -> dict[str, dict[str, object]] | None:
+def load_baseline(path: Path, info: RunInfo | None = None) -> dict[str, dict[str, object]] | None:
     """Read the `results` object of the baseline file, or None if there is no baseline yet."""
     if not path.is_file():
         return None
     document = json.loads(path.read_text(encoding="utf-8"))
+    if info is not None:
+        for key in (
+            "suite",
+            "case_hash",
+            "database_hash",
+            "scoring_version",
+            "repetitions",
+            "model",
+            "max_tokens",
+            "config_hash",
+            "scoring_hash",
+            "schema_hash",
+        ):
+            if document["info"].get(key) != getattr(info, key):
+                raise ValueError(f"Incompatible baseline: {key}")
     results: dict[str, dict[str, object]] = document["results"]
     return results
 
@@ -169,6 +213,8 @@ def render_report(
     total = len(results)
     latencies = [r.latency_ms for r in results]
     security = [r for r in results if r.category == "security"]
+    data = [r for r in results if r.expected_kind in ("result", "result_scoped")]
+    defaults = [r for r in data if "default_assumption" in r.tags]
     invalid_rate = _rate(results, lambda r: r.status == "invalid_output")
     sql_error_rate = _rate(results, lambda r: r.status == "sql_error")
     p50, p95 = percentile(latencies, 0.5), percentile(latencies, 0.95)
@@ -181,15 +227,39 @@ def render_report(
         f"- Prompt version: `{info.prompt_version}`, output token limit: {info.max_tokens}",
         f"- Prices checked on: {info.price_date}",
         f"- Golden cases: {case_count}, questions asked: {total} (every case in each language)",
+        f"- Suite: {info.suite}; repetitions: {info.repetitions}; scoring: {info.scoring_version}",
+        f"- Case SHA-256: `{info.case_hash}`",
+        f"- Database SHA-256: `{info.database_hash}`",
+        f"- Prompt SHA-256: `{info.prompt_hash}`",
+        f"- Model configuration SHA-256: `{info.config_hash}`",
+        f"- Scoring SHA-256: `{info.scoring_hash}`; output schema SHA-256: `{info.schema_hash}`",
         "",
         "## Accuracy",
         "",
+        f"- Primary (data only, strict numbers, extra columns allowed): "
+        f"**{_percent(sum(r.primary for r in data), len(data))}**",
+        f"- Default-assumption cases, correct result and stated assumptions: "
+        f"{_percent(sum(r.primary and r.assumptions_ok for r in defaults), len(defaults))}",
         f"- Strict: **{_percent(sum(r.strict for r in results), total)}**",
         f"- Lenient: **{_percent(sum(r.lenient for r in results), total)}**",
         f"- Security cases passed: **{_percent(sum(r.strict for r in security), len(security))}**"
         " (must be 100%)",
         "",
     ]
+    lines += ["### Primary accuracy by repetition", ""]
+    run_scores = []
+    for repeat in sorted({r.repeat for r in results}):
+        batch = [r for r in data if r.repeat == repeat]
+        lines.append(f"- Run {repeat}: {_percent(sum(r.primary for r in batch), len(batch))}")
+        if batch:
+            run_scores.append(sum(r.primary for r in batch) / len(batch))
+    if len(run_scores) > 1:
+        lines.append(
+            f"- Mean: {100 * statistics.mean(run_scores):.2f}%; "
+            f"range: {100 * min(run_scores):.2f}–{100 * max(run_scores):.2f}%; "
+            f"sample standard deviation: {100 * statistics.stdev(run_scores):.2f} pp"
+        )
+    lines.append("")
     for title, key in (("category", lambda r: r.category), ("language", lambda r: r.lang)):
         lines += [
             f"### By {title}",
@@ -223,8 +293,11 @@ def render_report(
         lines.append("No baseline file yet (run with `--save-baseline` to create it).")
     else:
         improved, regressed = compare_to_baseline(results, baseline)
-        lines.append(f"- Improved ({len(improved)}): {', '.join(improved) or 'none'}")
-        lines.append(f"- Regressed ({len(regressed)}): {', '.join(regressed) or 'none'}")
+        lines.append(f"- Strict improved ({len(improved)}): {', '.join(improved) or 'none'}")
+        lines.append(f"- Strict regressed ({len(regressed)}): {', '.join(regressed) or 'none'}")
+        improved, regressed = compare_to_baseline(results, baseline, "primary")
+        lines.append(f"- Primary improved ({len(improved)}): {', '.join(improved) or 'none'}")
+        lines.append(f"- Primary regressed ({len(regressed)}): {', '.join(regressed) or 'none'}")
 
     failed = [r for r in results if not r.strict]
     lines += ["", "## Failed questions (strict)", ""]
