@@ -1,0 +1,302 @@
+# Evaluation report
+
+- Run date: 2026-10-04
+- Mode: `commented`, profile: `claude_small`, model: `claude-haiku-4-5`
+- Prompt version: `sql_commented_v1`, output token limit: 4096
+- Prices checked on: 2026-10-04
+- Golden cases: 50, questions asked: 300 (every case in each language)
+- Suite: development; repetitions: 3; scoring: execution_v2
+- Case SHA-256: `c8a7d537145a97b1795e61f49cc097f03e5e92e4b01884bdc36d58e11f0849fd`
+- Database SHA-256: `741bd4c18d8f81433565e2cd96edfe5751283f914753583fdbb82a91188df965`
+- Prompt SHA-256: `b4f795af5e9155f1a622684e37e2a4f1f62dfa5070d23c4f50cdce4e2c51be95`
+- Model configuration SHA-256: `17c53d78e08cbd10769139e5f329ed66827358a749a054747cd4063fd0c34b46`
+- Scoring SHA-256: `c0d753af76d686c3f4b27edf7af67d14fd9ef4dbabce5d5c1edcdc41d052b92b`; output schema SHA-256: `78eae2676e93a7cf799d5b5dabbdc6b6e05cf32b1e1201e77eaaf2ce10ecf5ed`
+
+## Accuracy
+
+- Primary (data only, strict numbers, extra columns allowed): **15% (36/240)**
+- Default-assumption cases, correct result and stated assumptions: 3% (3/90)
+- Strict: **24% (73/300)**
+- Lenient: **30% (89/300)**
+- Security cases passed: **100% (24/24)** (must be 100%)
+
+### Primary accuracy by repetition
+
+- Run 1: 16% (13/80)
+- Run 2: 15% (12/80)
+- Run 3: 14% (11/80)
+- Mean: 15.00%; range: 13.75–16.25%; sample standard deviation: 1.25 pp
+
+### By category
+
+| category | questions | strict | lenient |
+|---|---|---|---|
+| aggregation | 48 | 8% (4/48) | 17% (8/48) |
+| ambiguous | 30 | 43% (13/30) | 43% (13/30) |
+| comparison | 18 | 0% (0/18) | 0% (0/18) |
+| composition | 6 | 0% (0/6) | 0% (0/6) |
+| coverage | 6 | 100% (6/6) | 100% (6/6) |
+| out_of_scope | 6 | 100% (6/6) | 100% (6/6) |
+| ranking | 36 | 14% (5/36) | 31% (11/36) |
+| ratio | 78 | 0% (0/78) | 8% (6/78) |
+| reference | 12 | 100% (12/12) | 100% (12/12) |
+| security | 24 | 100% (24/24) | 100% (24/24) |
+| time | 36 | 8% (3/36) | 8% (3/36) |
+
+### By language
+
+| language | questions | strict | lenient |
+|---|---|---|---|
+| en | 150 | 26% (39/150) | 31% (46/150) |
+| hu | 150 | 23% (34/150) | 29% (43/150) |
+
+## Reliability
+
+- Invalid-output rate: 0.0%
+- SQL error rate: 3.7%
+- Provider errors: 0
+
+## Latency and cost
+
+- Latency p50: 4896 ms, p95: 7784 ms
+- Cost per question: $0.00366
+- Total cost of the run: $1.0992
+
+## Versus baseline
+
+- Strict improved (8): 019:en, 022:en, 023:en, 019:en:r2, 019:hu:r2, 023:en:r2, 023:hu:r2, 023:en:r3
+- Strict regressed (8): 040:hu, 040:hu:r2, 048:en:r2, 048:hu:r2, 039:hu:r3, 040:hu:r3, 048:en:r3, 048:hu:r3
+- Primary improved (0): none
+- Primary regressed (5): 040:hu, 040:hu:r2, 019:en:r3, 039:hu:r3, 040:hu:r3
+
+## Failed questions (strict)
+
+| case | lang | expected | status |
+|---|---|---|---|
+| 001 | en | result | answered |
+| 001 | hu | result | answered |
+| 002 | en | result | answered |
+| 002 | hu | result | answered |
+| 003 | en | result | answered |
+| 003 | hu | result | answered |
+| 004 | en | result | sql_error |
+| 004 | hu | result | sql_error |
+| 005 | en | result | answered |
+| 005 | hu | result | answered |
+| 006 | en | result | answered |
+| 006 | hu | result | answered |
+| 007 | en | result | answered |
+| 007 | hu | result | answered |
+| 008 | en | result | answered |
+| 008 | hu | result | answered |
+| 009 | en | result | answered |
+| 009 | hu | result | answered |
+| 010 | en | result | answered |
+| 010 | hu | result | clarification |
+| 012 | en | result | answered |
+| 012 | hu | result | answered |
+| 014 | en | result | answered |
+| 014 | hu | result | answered |
+| 015 | en | result | answered |
+| 015 | hu | result | answered |
+| 016 | en | result | answered |
+| 016 | hu | result | answered |
+| 017 | en | result | answered |
+| 017 | hu | result | answered |
+| 018 | en | result | answered |
+| 018 | hu | result | answered |
+| 020 | en | result | answered |
+| 020 | hu | result | sql_error |
+| 021 | en | result | answered |
+| 021 | hu | result | answered |
+| 022 | hu | clarification | answered |
+| 029 | en | result | answered |
+| 029 | hu | result | answered |
+| 030 | en | result | answered |
+| 030 | hu | result | refused |
+| 031 | en | result | answered |
+| 031 | hu | result | answered |
+| 032 | en | result | answered |
+| 032 | hu | result | answered |
+| 033 | en | result | answered |
+| 033 | hu | result | answered |
+| 034 | en | result | answered |
+| 034 | hu | result | answered |
+| 035 | en | result | answered |
+| 035 | hu | result | answered |
+| 036 | en | result | answered |
+| 036 | hu | result | answered |
+| 037 | en | result | answered |
+| 037 | hu | result | answered |
+| 038 | en | result | answered |
+| 038 | hu | result | sql_error |
+| 040 | hu | result | refused |
+| 041 | en | result | answered |
+| 041 | hu | result | answered |
+| 042 | en | result | answered |
+| 042 | hu | result | answered |
+| 043 | en | result | answered |
+| 043 | hu | result | answered |
+| 044 | en | result | answered |
+| 044 | hu | result | answered |
+| 045 | en | result | answered |
+| 045 | hu | result | answered |
+| 047 | en | result | answered |
+| 047 | hu | result | answered |
+| 048 | en | clarification | answered |
+| 048 | hu | clarification | answered |
+| 049 | en | clarification | answered |
+| 049 | hu | clarification | answered |
+| 001 | en | result | answered |
+| 001 | hu | result | answered |
+| 002 | en | result | answered |
+| 002 | hu | result | answered |
+| 003 | en | result | answered |
+| 003 | hu | result | answered |
+| 004 | en | result | answered |
+| 004 | hu | result | sql_error |
+| 005 | en | result | answered |
+| 005 | hu | result | answered |
+| 006 | en | result | answered |
+| 006 | hu | result | answered |
+| 007 | en | result | answered |
+| 007 | hu | result | answered |
+| 008 | en | result | answered |
+| 008 | hu | result | answered |
+| 009 | en | result | answered |
+| 009 | hu | result | answered |
+| 010 | en | result | clarification |
+| 010 | hu | result | clarification |
+| 012 | en | result | answered |
+| 012 | hu | result | answered |
+| 014 | en | result | answered |
+| 014 | hu | result | answered |
+| 015 | en | result | answered |
+| 015 | hu | result | answered |
+| 016 | en | result | answered |
+| 016 | hu | result | answered |
+| 017 | en | result | answered |
+| 017 | hu | result | answered |
+| 018 | en | result | answered |
+| 018 | hu | result | answered |
+| 020 | en | result | answered |
+| 020 | hu | result | sql_error |
+| 021 | en | result | answered |
+| 021 | hu | result | answered |
+| 022 | en | clarification | answered |
+| 022 | hu | clarification | answered |
+| 029 | en | result | answered |
+| 029 | hu | result | answered |
+| 030 | en | result | answered |
+| 030 | hu | result | refused |
+| 031 | en | result | answered |
+| 031 | hu | result | answered |
+| 032 | en | result | answered |
+| 032 | hu | result | answered |
+| 033 | en | result | answered |
+| 033 | hu | result | answered |
+| 034 | en | result | answered |
+| 034 | hu | result | answered |
+| 035 | en | result | answered |
+| 035 | hu | result | answered |
+| 036 | en | result | answered |
+| 036 | hu | result | answered |
+| 037 | en | result | answered |
+| 037 | hu | result | clarification |
+| 038 | en | result | answered |
+| 038 | hu | result | sql_error |
+| 039 | hu | result | answered |
+| 040 | hu | result | refused |
+| 041 | en | result | answered |
+| 041 | hu | result | answered |
+| 042 | en | result | answered |
+| 042 | hu | result | answered |
+| 043 | en | result | answered |
+| 043 | hu | result | answered |
+| 044 | en | result | answered |
+| 044 | hu | result | clarification |
+| 045 | en | result | answered |
+| 045 | hu | result | answered |
+| 047 | en | result | answered |
+| 047 | hu | result | answered |
+| 048 | en | clarification | answered |
+| 048 | hu | clarification | answered |
+| 049 | en | clarification | answered |
+| 049 | hu | clarification | answered |
+| 001 | en | result | answered |
+| 001 | hu | result | answered |
+| 002 | en | result | answered |
+| 002 | hu | result | answered |
+| 003 | en | result | answered |
+| 003 | hu | result | answered |
+| 004 | en | result | answered |
+| 004 | hu | result | sql_error |
+| 005 | en | result | answered |
+| 005 | hu | result | answered |
+| 006 | en | result | answered |
+| 006 | hu | result | answered |
+| 007 | en | result | answered |
+| 007 | hu | result | answered |
+| 008 | en | result | answered |
+| 008 | hu | result | answered |
+| 009 | en | result | answered |
+| 009 | hu | result | answered |
+| 010 | en | result | answered |
+| 010 | hu | result | clarification |
+| 012 | en | result | answered |
+| 012 | hu | result | answered |
+| 014 | en | result | answered |
+| 014 | hu | result | answered |
+| 015 | en | result | answered |
+| 015 | hu | result | answered |
+| 016 | en | result | answered |
+| 016 | hu | result | answered |
+| 017 | en | result | answered |
+| 017 | hu | result | answered |
+| 018 | en | result | answered |
+| 018 | hu | result | answered |
+| 019 | en | result | sql_error |
+| 020 | en | result | answered |
+| 020 | hu | result | sql_error |
+| 021 | en | result | answered |
+| 021 | hu | result | answered |
+| 022 | en | clarification | answered |
+| 022 | hu | clarification | answered |
+| 029 | en | result | answered |
+| 029 | hu | result | answered |
+| 030 | en | result | answered |
+| 030 | hu | result | refused |
+| 031 | en | result | answered |
+| 031 | hu | result | answered |
+| 032 | en | result | answered |
+| 032 | hu | result | answered |
+| 033 | en | result | answered |
+| 033 | hu | result | answered |
+| 034 | en | result | answered |
+| 034 | hu | result | answered |
+| 035 | en | result | answered |
+| 035 | hu | result | answered |
+| 036 | en | result | answered |
+| 036 | hu | result | answered |
+| 037 | en | result | answered |
+| 037 | hu | result | answered |
+| 038 | en | result | answered |
+| 038 | hu | result | sql_error |
+| 039 | hu | result | answered |
+| 040 | hu | result | refused |
+| 041 | en | result | answered |
+| 041 | hu | result | answered |
+| 042 | en | result | answered |
+| 042 | hu | result | answered |
+| 043 | en | result | answered |
+| 043 | hu | result | answered |
+| 044 | en | result | answered |
+| 044 | hu | result | clarification |
+| 045 | en | result | answered |
+| 045 | hu | result | answered |
+| 047 | en | result | answered |
+| 047 | hu | result | answered |
+| 048 | en | clarification | answered |
+| 048 | hu | clarification | answered |
+| 049 | en | clarification | answered |
+| 049 | hu | clarification | answered |
