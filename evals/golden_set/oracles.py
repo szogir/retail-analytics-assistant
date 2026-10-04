@@ -7,6 +7,18 @@ import polars as pl
 from evals.reference_tools import ReferenceData, basket, grouped, number, total
 
 
+def growth(new: object, base: object) -> float | None:
+    """Return new / base - 1, or None when the base is missing or zero.
+
+    Why: the SQL references divide by NULLIF(base, 0), which yields NULL. Python would
+    raise ZeroDivisionError or KeyError, so the independent calculation needs the same
+    explicit "no base" branch.
+    """
+    if new is None or base is None or not number(base):
+        return None
+    return number(new) / number(base) - 1
+
+
 def _case_029(d: ReferenceData) -> Sequence[tuple[object, ...]]:
     """Compute case 029 from base data, independently of SQL."""
     return [(total(d.window("2024-07-01", "2024-12-31").filter(pl.col("city") == "Budapest")),)]
@@ -91,7 +103,7 @@ def _case_037(d: ReferenceData) -> Sequence[tuple[object, ...]]:
     """Compute case 037 from base data, independently of SQL."""
     a = dict(grouped(d.window("2024-01-01", "2024-12-31"), ["country_code"]).iter_rows())
     b = dict(grouped(d.window("2025-01-01", "2025-12-31"), ["country_code"]).iter_rows())
-    return [(k, b[k] / a[k] - 1) for k in sorted(a)]
+    return [(k, growth(b.get(k), a[k])) for k in sorted(a)]
 
 
 def _case_038(d: ReferenceData) -> Sequence[tuple[object, ...]]:
@@ -121,14 +133,16 @@ def _case_041(d: ReferenceData) -> Sequence[tuple[object, ...]]:
     """Compute case 041 from base data, independently of SQL."""
     a = dict(grouped(d.window("2024-01-01", "2024-12-31"), ["store_id"]).iter_rows())
     b = dict(grouped(d.window("2025-01-01", "2025-12-31"), ["store_id"]).iter_rows())
-    return sorted([(k, b[k] / a[k] - 1) for k in a], key=lambda x: (-x[1], x[0]))[:3]
+    rows = [(k, growth(b.get(k), a[k])) for k in a]
+    # Missing growth sorts last, like NULLS LAST in the reference SQL.
+    return sorted(rows, key=lambda x: (x[1] is None, -(x[1] or 0.0), x[0]))[:3]
 
 
 def _case_042(d: ReferenceData) -> Sequence[tuple[object, ...]]:
     """Compute case 042 from base data, independently of SQL."""
     f = d.window("2025-01-01", "2025-12-31", "HU").with_columns(m=pl.col("sales_date").dt.month())
     v = dict(grouped(f, ["m"]).iter_rows())
-    return [(m, v[m] / v[m - 1] - 1) for m in range(2, 13)]
+    return [(m, growth(v.get(m), v.get(m - 1))) for m in range(2, 13)]
 
 
 def _case_043(d: ReferenceData) -> Sequence[tuple[object, ...]]:

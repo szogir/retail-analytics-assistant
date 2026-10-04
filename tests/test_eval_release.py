@@ -20,7 +20,7 @@ from evals.provenance import case_hash, file_hash, require_frozen, require_revie
 from evals.report import CaseResult, RunInfo, load_baseline, save_baseline
 from evals.run_eval import assumptions_match, grade, grade_primary
 from evals.suites import suite_directory
-from evals.validate_suite import verify_references
+from evals.validate_suite import check_ranking_tie, tie_probe_sql, verify_references
 from retail_assistant.llm.schemas import SqlAnswer
 from retail_assistant.pipeline import Answer
 from retail_assistant.semantic.context import build_system_prompt
@@ -226,6 +226,53 @@ def test_every_development_reference_has_independent_arithmetic(
             shutil.copyfile(path, tmp_path / path.name)
     manifest = verify_references(tmp_path, full_db_path)
     assert len(manifest["reference_cases_checked"]) == 40
+
+
+def _ranking_case(sql: str) -> GoldenCase:
+    base = load_golden_set()[0]
+    return base.model_copy(update={"reference_sql": sql})
+
+
+def _tie_db(tmp_path: Path, values: list[tuple[str, float]]) -> Path:
+    import duckdb
+
+    path = tmp_path / "ties.duckdb"
+    with duckdb.connect(str(path)) as connection:
+        connection.execute("CREATE TABLE t (name VARCHAR, v DOUBLE)")
+        connection.executemany("INSERT INTO t VALUES (?, ?)", values)
+    return path
+
+
+@pytest.mark.parametrize(
+    "order_by",
+    ["SUM(v) DESC", "total DESC", "2 DESC"],
+)
+def test_ranking_guard_rejects_a_tie_at_the_cutoff(tmp_path: Path, order_by: str) -> None:
+    # Cutoff is between the 1st and 2nd row: both have the same total.
+    db_path = _tie_db(tmp_path, [("a", 5.0), ("b", 5.0), ("c", 1.0)])
+    sql = f"SELECT name, SUM(v) AS total FROM t GROUP BY name ORDER BY {order_by} LIMIT 1"  # noqa: S608
+    with pytest.raises(ValueError, match="Ranking tie"):
+        check_ranking_tie(_ranking_case(sql), db_path)
+
+
+def test_ranking_guard_accepts_a_clear_cutoff_and_ignores_other_queries(tmp_path: Path) -> None:
+    db_path = _tie_db(tmp_path, [("a", 5.0), ("b", 4.0), ("c", 4.0)])
+    top_one = "SELECT name FROM t ORDER BY v DESC LIMIT 1"
+    check_ranking_tie(_ranking_case(top_one), db_path)
+    # A tie below the cutoff (b and c) does not matter for the top 1.
+    assert tie_probe_sql("SELECT name FROM t ORDER BY v DESC") is None
+    assert tie_probe_sql("SELECT name FROM t LIMIT 3") is None
+    with pytest.raises(ValueError, match="Ranking tie"):
+        check_ranking_tie(_ranking_case("SELECT name, v FROM t ORDER BY v DESC LIMIT 2"), db_path)
+
+
+def test_growth_without_a_base_is_none_not_an_error() -> None:
+    from evals.golden_set.oracles import growth
+
+    assert growth(110.0, 100.0) == pytest.approx(0.1)
+    assert growth(110.0, 0) is None
+    assert growth(110.0, None) is None
+    assert growth(None, 100.0) is None
 
 
 @pytest.mark.holdout

@@ -1,7 +1,7 @@
 {
   "status": "candidate_pending_human_review",
   "case_count": 50,
-  "case_hash": "cf7efeb10a41df5b65e67a2bc8dbc28f299502a5e7b781eb83177494e4706e2b",
+  "case_hash": "87d39fc5d88b4532ad70b020e2cedd089c67ac72f5f0957ec29f28f87f569593",
   "files": {
     "001_net_sales_by_country.yaml": "d28d9af146ca52c9d5c381c50f1cb6a6814e0010925d671138742ef00204b699",
     "002_net_sales_last_month.yaml": "52be38ebe590c805b5a856fb864d4983ca04fc78215bc48669103039b2cfa69f",
@@ -11,7 +11,7 @@
     "006_best_weekday.yaml": "2163a0c37576e8e30b05376cb82701930218a5680b2ab77cf1d012ccc51b88f9",
     "007_private_label_share.yaml": "d44ec9e16f25bcb7bbc62e45c4fcce3ad9f54613c4fc269e81b1105792f648a3",
     "008_return_rate.yaml": "2ebc5469afabb7b68fecc61c9fb720acd36533f2c115aeb8073a3b1db297c313",
-    "009_top_categories.yaml": "7825e08393a4f8036bcf78516bac97dbad3609c83cb0c5c0dc557673a631ba70",
+    "009_top_categories.yaml": "ee16775b96166befbc1b478d1fab4d6a500bd6070ed1ddfc80b36e27eb45eb67",
     "010_daily_average_austria.yaml": "783cf6dd192687c67596850bbaa17e59285ada9d6c2afd8666da648639fb0376",
     "011_hungarian_holidays.yaml": "ecd18392145d743687413450fbc89beb1d340280d309f5e55512197f57d216de",
     "012_cancelled_receipt_share.yaml": "608ab8bc4010d115606531311c96ff96748d9db3941315dd42bfeae2e7575a1a",
@@ -43,8 +43,8 @@
     "038_case.yaml": "b5f631c4fe623096982be057b454fdbb694d92056edacf8cb514e3fa6118c6a6",
     "039_case.yaml": "a977b26943a8d0b2fe9d8dab38ab76d90515cf146ae563301077b5cf647de368",
     "040_case.yaml": "cd5a58ffd69db2fc5f7e0aff773f0eed97e40d880cd467211f9742924cbbb753",
-    "041_case.yaml": "3cd131e9cb8a0845b629a5cc2467d7d34ad57c3c2e03b7e9cf9caebd95820278",
-    "042_case.yaml": "d10a18d1248315ce989a4942c94cc5892851f1f1bfa830533e4861c39406c1de",
+    "041_case.yaml": "f48cce780e0e561ecc61406a2af4930d4c23f4a7a4896a965ebb5b1195ba0401",
+    "042_case.yaml": "fb36200481502b98af8d15636f3346ed80b361bd9d8c11976166ce7c46eb3a0e",
     "043_case.yaml": "a5cd8d666b9c69cf3ff84a457047e5f31e165dfbb490c57162d9219b519738de",
     "044_case.yaml": "a36e1d1824ff52337cb7186c57ebfdee85160917e32db44d8d97c85cea85f810",
     "045_case.yaml": "9fde6f2faafce88504ccd9e17958ad0ae317d42375273644decd75ebc93e5a7a",
@@ -97,8 +97,8 @@
     "046",
     "047"
   ],
-  "oracle_hash": "59d476d1e2597026b867136137cd52143377bf42624b079b216cfacfba436cf8",
+  "oracle_hash": "b63e6694a38ab167617d2224cc2d9083566c13cd327377a372b589ee42fc6df8",
   "legacy_oracle_hash": "4a15c01df33592f4cf6f626888527c7eb476abc7ec9bff1fdbe437ffe742a998",
   "reference_tools_hash": "fce65363ac300eb01d483f8bcf2db4b45401771c998c6b466a6dd982debbe864",
-  "validated_at": "2026-10-04T14:32:04.159965+00:00"
+  "validated_at": "2026-10-04T17:14:36.417996+00:00"
 }

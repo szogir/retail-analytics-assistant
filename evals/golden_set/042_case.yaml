@@ -54,7 +54,7 @@ reference_sql: |
   ), changes AS (
     SELECT
       m,
-      n / LAG(n) OVER (ORDER BY m) - 1 AS growth
+      n / NULLIF(LAG(n) OVER (ORDER BY m), 0) - 1 AS growth
     FROM monthly
   )
   SELECT

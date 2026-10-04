@@ -33,6 +33,23 @@ reviewed_on: 2026-10-04  # use the actual review date
 reviewed_by: Richard
 ```
 
+### Ranking tie guard
+
+Reference SQL of the form `ORDER BY ... LIMIT N` picks an arbitrary row when the N-th and
+(N+1)-th values are equal, and the question does not say how to break such a tie. The
+verification therefore reruns every such query without `LIMIT` and **fails** if the first
+sort key of rows N and N+1 is equal within the comparison tolerance (relative 1e-6).
+
+- Cases are recognised from the SQL (top-level `ORDER BY` plus numeric `LIMIT`); no YAML
+  field is needed, so the same code protects the sealed suite without editing its files.
+  Currently this covers 006, 009, 017, 019, 038 and 041.
+- The guard is stricter than necessary where the question states a tie rule (041): any
+  tie in the first key is reported.
+- Not covered: rankings built with window functions (047). Its question states the
+  tie rule, so the stated rule decides.
+- Question texts are not extended with tie rules; a tie would show up as a failed
+  verification, to be handled by a deliberate versioned change.
+
 Approval records are an audit trail and a release gate, not proof that a person really
 read a file. Automated verification must never fabricate human approval.
 

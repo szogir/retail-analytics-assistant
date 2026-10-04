@@ -54,7 +54,7 @@ reference_sql: |
   GROUP BY
     store_id
   ORDER BY
-    growth DESC,
+    growth DESC NULLS LAST,
     store_id
   LIMIT 3
 order_sensitive: true

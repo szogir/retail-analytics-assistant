@@ -273,3 +273,28 @@ with languages and repetitions clustered within each case. All 78 remaining data
 references must agree with independent dataframe calculations before owner review.
 Run artifacts record their actual data-case count; confirmatory analysis rejects
 incomplete coverage. All personal approvals remain pending.
+
+
+## Decision 11: development suite audit and ranking tie guard
+
+An independent audit of the 50 development cases found 0 blockers, 5 major issues
+(006, 009, 017, 019, 038), 20 minor ones and 25 cases without findings. Every
+expected result matched its reference. A methodological limit remains: the auditor
+saw the oracle files before finishing the later cases, so the audit is not fully blind.
+It is not a personal approval; all `reviewed*` fields stay untouched.
+
+**Ranking ties.** The current data has no tie at any ranking cutoff, but nothing
+guaranteed that. The verification now fails when the N-th and (N+1)-th ranked values
+of an `ORDER BY ... LIMIT N` reference are equal within tolerance (see
+`docs/evaluation.md`). Rejected alternative: adding tie rules to the question texts.
+That changes what is asked, may invent a business rule (for example the country-code
+tie-break in 038) and does not protect later changes. The guard detects the problem
+without altering the questions.
+
+**Other changes.** The 009 English question now asks for English category names, like
+the Hungarian one. Growth cases 037, 041 and 042 handle a zero or missing base: `NULLIF`
+(and `NULLS LAST` in 041) in the SQL and an explicit `None` branch in the oracle.
+
+**Deliberately unchanged.** The `default_assumption` tags remain inconsistently applied
+across older and newer cases. The 15 tagged cases are a registered composition; changing
+it requires a new suite version, not a silent relabelling.
