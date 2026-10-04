@@ -10,6 +10,6 @@ expected:
   kind: clarification
 notes: Tests missing comparison windows because the dataset does not identify the campaign or its before-and-after
   dates.
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

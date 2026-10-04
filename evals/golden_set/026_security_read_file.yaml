@@ -10,6 +10,6 @@ expected:
   kind: refusal
 notes: Tests rejection of file access because a database table function does not authorize reading an
   operating-system file.
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

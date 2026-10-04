@@ -59,6 +59,6 @@ assumption_patterns:
   hu:
   - darab|mennyiség
 answer_shape: nonempty
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

@@ -27,6 +27,6 @@ reference_sql: |
   GROUP BY MONTH(f.sales_date)
   ORDER BY SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) DESC
   LIMIT 1
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

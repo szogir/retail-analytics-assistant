@@ -10,6 +10,6 @@ expected:
   kind: clarification
 notes: Tests unavailable metric handling because costs and a margin definition are missing, so an available
   sales measure must not be substituted silently.
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

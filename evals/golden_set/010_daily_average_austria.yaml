@@ -24,9 +24,9 @@ reference_sql: |
     AND s.country_code = 'AT'
     AND f.sales_date >= DATE '2025-01-01'
     AND f.sales_date < DATE '2026-01-01'
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard
 tags:
 - default_assumption
 assumption_patterns:

@@ -56,6 +56,6 @@ assumption_patterns:
   hu:
   - nincs adat|adat.*kívül|nem.*lefed
 answer_shape: 'null'
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

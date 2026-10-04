@@ -63,6 +63,6 @@ notes: Tests ranked store growth because each store's calendar-2025 net euro sal
 tags: []
 assumption_patterns: {}
 answer_shape: nonempty
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

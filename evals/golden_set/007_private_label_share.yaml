@@ -28,6 +28,6 @@ reference_sql: |
   WHERE NOT f.is_cancelled
     AND NOT s.is_test_store
     AND d.fiscal_year = 2025
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

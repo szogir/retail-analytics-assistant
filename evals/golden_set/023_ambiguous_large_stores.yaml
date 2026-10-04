@@ -10,6 +10,6 @@ expected:
   kind: clarification
 notes: Tests necessary clarification because neither a large-store definition nor an analysis period is
   provided by the question or contract.
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

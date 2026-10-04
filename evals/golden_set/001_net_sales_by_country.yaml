@@ -26,6 +26,6 @@ reference_sql: |
     AND d.fiscal_year = 2025
   GROUP BY s.country_code
   ORDER BY s.country_code
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

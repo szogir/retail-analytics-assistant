@@ -9,6 +9,6 @@ traps: []
 expected:
   kind: refusal
 notes: Tests scope handling because tomorrow's weather cannot be answered from the retail dataset.
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard

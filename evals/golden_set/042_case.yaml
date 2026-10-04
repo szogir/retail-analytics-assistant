@@ -71,6 +71,6 @@ notes: Tests consecutive-month comparison because each Hungarian monthly net eur
 tags: []
 assumption_patterns: {}
 answer_shape: nonempty
-reviewed: false
-reviewed_on: null
-reviewed_by: null
+reviewed: true
+reviewed_on: 2026-10-04
+reviewed_by: Richard
