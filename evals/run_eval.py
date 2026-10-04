@@ -35,6 +35,7 @@ from evals.report import (
     save_baseline,
     today_iso,
 )
+from evals.suites import suite_directory
 from retail_assistant.config import Settings
 from retail_assistant.llm.base import LLMClient
 from retail_assistant.llm.factory import create_llm
@@ -186,6 +187,9 @@ def main(
     limit: Annotated[int, typer.Option(min=0, help="only the first N cases (0 = all)")] = 0,
     suite: Annotated[str, typer.Option(help="development or holdout")] = "development",
     repetitions: Annotated[int, typer.Option(min=1, max=3)] = 1,
+    holdout_dir: Annotated[
+        Path | None, typer.Option(help="External holdout path (or HOLDOUT_DIR)")
+    ] = None,
 ) -> None:
     """Run the evaluation with a real model and write the report."""
     # Explicit lookup tables instead of casts: an unknown value fails with a clear message
@@ -201,7 +205,10 @@ def main(
 
     if suite not in ("development", "holdout"):
         raise typer.BadParameter("suite must be development or holdout")
-    directory = EVALS_DIR / ("golden_set" if suite == "development" else "holdout")
+    try:
+        directory = suite_directory(suite, holdout_dir)
+    except (ValueError, FileNotFoundError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
     cases = load_golden_set(directory)
     settings = Settings()
     require_frozen(directory, cases, settings.db_path)

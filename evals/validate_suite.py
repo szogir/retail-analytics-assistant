@@ -16,6 +16,7 @@ from evals.compare import tables_match
 from evals.golden import GoldenCase, load_golden_set
 from evals.provenance import case_hash, file_hash, require_reviewed
 from evals.reference_tools import ReferenceData
+from evals.suites import suite_directory
 from retail_assistant.sql.executor import execute_query
 
 Oracle = Callable[[str, ReferenceData], list[tuple[object, ...]]]
@@ -161,8 +162,12 @@ def main() -> None:
     parser.add_argument("--suite", choices=["development", "holdout"], required=True)
     parser.add_argument("--db", type=Path, default=ROOT / "data" / "retail.duckdb")
     parser.add_argument("--freeze", action="store_true")
+    parser.add_argument("--holdout-dir", type=Path, help="External holdout path (or HOLDOUT_DIR)")
     args = parser.parse_args()
-    directory = ROOT / "evals" / ("golden_set" if args.suite == "development" else "holdout")
+    try:
+        directory = suite_directory(args.suite, args.holdout_dir)
+    except (ValueError, FileNotFoundError) as exc:
+        parser.error(str(exc))
     if args.freeze:
         require_reviewed(load_golden_set(directory))
         if (directory / "frozen.json").exists():

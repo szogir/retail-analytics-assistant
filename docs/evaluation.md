@@ -9,6 +9,9 @@ human review**, not frozen benchmark releases. `reviewed: false` is deliberate.
 
 The original `evals/baseline.json` and `evals/reports/latest.md` are historical 28-case
 artifacts. New runs are stored separately inside each suite's `artifacts/` directory.
+The holdout is physically outside the repository. Configure it only in the owner's
+evaluation environment through `HOLDOUT_DIR` or the explicit `--holdout-dir` option;
+there is no repository-local default. Missing or empty suites are errors.
 
 ## Offline verification and human review
 
@@ -41,11 +44,14 @@ excluded from ordinary implementation tests. Freezing reruns independent verific
 and refuses to overwrite an existing `frozen.json`. Live evaluation requires reviewed
 cases and matching case, file, oracle and database fingerprints.
 
-The owner performs the corresponding holdout verification/review/freezing in the sealed
-evaluation session, substituting `--suite holdout`, and uses `pytest -m review` to check
-both approvals. Detailed holdout output stays under `evals/holdout/`; do not paste it into
+The owner performs holdout verification/review/freezing in the sealed evaluation session,
+substituting `--suite holdout`, and uses `pytest -m review` to check both approvals.
+Detailed output stays under the external directory's `artifacts/`; do not paste it into
 the semantic development session. `pytest -m 'holdout and not review'` checks the sealed
-references explicitly. Ordinary tests, lint and type checking exclude sealed content.
+references locally when `HOLDOUT_DIR` is set; otherwise it skips with an explicit reason.
+Pending personal-approval tests are xfail; the actual freeze command still rejects them.
+Development sessions must use `pytest -m 'not live and not review and not holdout'` even
+when they inherit the owner's environment. Lint/type checks do not discover external data.
 
 ## Measured runs after release
 

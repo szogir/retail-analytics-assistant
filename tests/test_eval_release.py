@@ -6,6 +6,7 @@ are loaded only by the explicitly selected holdout/review release checks.
 
 import datetime as dt
 import json
+import os
 from dataclasses import replace
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from evals.paired_analysis import paired_bootstrap
 from evals.provenance import case_hash, file_hash, require_frozen, require_reviewed
 from evals.report import CaseResult, RunInfo, load_baseline, save_baseline
 from evals.run_eval import assumptions_match, grade, grade_primary
+from evals.suites import suite_directory
 from evals.validate_suite import verify_references
 from retail_assistant.llm.schemas import SqlAnswer
 from retail_assistant.pipeline import Answer
@@ -222,7 +224,9 @@ def test_every_development_reference_has_independent_arithmetic(
 def test_sealed_references_and_composition(full_db_path: Path, tmp_path: Path) -> None:
     import shutil
 
-    directory = GOLDEN_SET_DIR.parent / "holdout"
+    if not os.environ.get("HOLDOUT_DIR"):
+        pytest.skip("External holdout not configured: set HOLDOUT_DIR to run this check locally")
+    directory = suite_directory("holdout")
     # Keep every copy and review output inside the sealed boundary.
     target = directory / "artifacts" / "test-suite"
     target.mkdir(parents=True, exist_ok=True)
@@ -253,7 +257,9 @@ def test_all_development_cases_have_personal_approval() -> None:
 @pytest.mark.review
 @pytest.mark.holdout
 def test_all_holdout_cases_have_personal_approval() -> None:
-    cases = load_golden_set(GOLDEN_SET_DIR.parent / "holdout")
+    if not os.environ.get("HOLDOUT_DIR"):
+        pytest.skip("External holdout not configured: set HOLDOUT_DIR to run this check locally")
+    cases = load_golden_set(suite_directory("holdout"))
     if any(not case.reviewed for case in cases):
         pytest.xfail("Personal approval is pending; the freeze command still rejects this suite")
     require_reviewed(cases)

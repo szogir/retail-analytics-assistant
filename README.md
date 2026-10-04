@@ -36,7 +36,9 @@ The [evaluation protocol](docs/decisions.md#8-preregistered-evaluation-protocol-
 defines the primary metric and paired analysis before semantic development.
 The [shared business contract](docs/business_contract.md) contains the rules available
 to implementation. See [evaluation operation](docs/evaluation.md) for offline validation,
-human approval and release commands. Default checks do not read sealed cases.
+human approval and release commands. Sealed data lives outside the repository; its
+tests skip unless `HOLDOUT_DIR` is configured. Semantic development must exclude the
+`holdout` test marker explicitly.
 
 ## Project layout
 

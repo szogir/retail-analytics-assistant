@@ -40,7 +40,6 @@ packages = ["src/retail_assistant"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["evals/holdout"]
 
 [tool.ruff.lint]
 # E/F: errors, I: import order, B: likely bugs, UP: modern syntax,
@@ -53,7 +52,6 @@ select = ["E", "F", "I", "B", "UP", "SIM", "S"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-exclude = ['evals[/\\]holdout[/\\]']
 mypy_path = "src"
 packages = ["retail_assistant", "data_gen", "evals"]
 
@@ -65,4 +63,4 @@ markers = [
     "review: human approval release gate (run explicitly with -m review)",
     "holdout: sealed suite validation (run only outside semantic development)",
 ]
-addopts = "-m 'not live and not review and not holdout'"
+addopts = "-m 'not live and not review'"
