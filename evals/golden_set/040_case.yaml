@@ -1,7 +1,7 @@
 id: '040'
 questions:
-  en: How many valid sales receipts were recorded in Austria on 5 January 2025?
-  hu: Hány érvényes eladási bizonylatot rögzítettünk Ausztriában 2025. január 5-én?
+  en: How many receipts were recorded in Austria on 5 January 2025?
+  hu: Hány bizonylatot rögzítettünk Ausztriában 2025. január 5-én?
 user: carla
 as_of_date: '2026-10-04'
 category: time
@@ -45,9 +45,15 @@ reference_sql: |
   WHERE
     country_code = 'AT' AND sales_date = '2025-01-05' AND NOT is_return
 order_sensitive: false
-notes: 'A covered Sunday on which Austrian stores are closed: COUNT is zero, not missing coverage.'
-tags: []
-assumption_patterns: {}
+notes: Tests a covered closed day because Austrian stores issue zero sales receipts on the specified Sunday
+  rather than having unknown coverage.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - exclud.*return|without.*return|sales.only|return.*exclud
+  hu:
+  - visszáru.*(kizár|nélkül)|visszárut.*nem|csak.*eladás
 answer_shape: nonempty
 reviewed: false
 reviewed_on: null

@@ -56,8 +56,8 @@ reference_sql: |
     country_code
   LIMIT 1
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests comparison of country baskets because each country uses its own non-return net receipt totals
+  and receipt count before the higher value is selected.
 tags:
 - default_assumption
 assumption_patterns:

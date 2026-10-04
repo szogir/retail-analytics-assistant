@@ -86,6 +86,7 @@ class RunInfo:
     schema_hash: str = ""
     holdout_manifest_hash: str = ""
     holdout_verified: bool = False
+    data_case_count: int = 0
 
 
 def percentile(values: Sequence[float], fraction: float) -> float:
@@ -184,6 +185,7 @@ def load_baseline(path: Path, info: RunInfo | None = None) -> dict[str, dict[str
             "config_hash",
             "scoring_hash",
             "schema_hash",
+            "data_case_count",
             "holdout_manifest_hash",
             "holdout_verified",
         ):

@@ -1,19 +1,20 @@
-id: "004"
+id: '004'
 questions:
-  en: "What was the average basket value in euro per country in 2025?"
-  hu: "Mekkora volt az átlagos kosárérték euróban országonként 2025-ben?"
+  en: What was the average basket value in euro per country in 2025?
+  hu: Mekkora volt az átlagos kosárérték euróban országonként 2025-ben?
 user: carla
 as_of_date: 2026-10-04
 category: ratio
-traps: [1, 2, 3, 4, 5]
+traps:
+- 1
+- 2
+- 3
+- 4
+- 5
 expected:
   kind: result
-notes: >
-  Average basket = net sales of SALES receipts in euro / number of those receipts,
-  per country. Return receipts (is_return) are left out of both the numerator and the
-  denominator, as are cancelled receipts and the test store. It must not be an average
-  of per-receipt or per-day averages. Convention: a bare year ("in 2025") is the
-  calendar year.
+notes: Tests country-level basket weighting because the correct value is the mean of net sales-receipt
+  totals, excluding returns, rather than an unweighted mean of store or daily averages.
 reference_sql: |
   SELECT s.country_code,
          SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate)

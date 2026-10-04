@@ -59,8 +59,8 @@ reference_sql: |
   ORDER BY
     quarter_no
 order_sensitive: true
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests cumulative aggregation because each calendar-quarter endpoint includes all net euro sales
+  since January 1, 2025 rather than only that quarter.
 tags: []
 assumption_patterns: {}
 answer_shape: nonempty

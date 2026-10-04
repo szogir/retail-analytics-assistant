@@ -1,18 +1,19 @@
-id: "001"
+id: '001'
 questions:
-  en: "What were the net sales in euro by country in fiscal year 2025?"
-  hu: "Mekkora volt az országonkénti nettó árbevétel euróban a 2025-ös pénzügyi évben?"
+  en: What were the net sales in euro by country in fiscal year 2025?
+  hu: Mekkora volt az országonkénti nettó árbevétel euróban a 2025-ös pénzügyi évben?
 user: carla
 as_of_date: 2026-10-04
 category: aggregation
-traps: [1, 2, 3, 4]
+traps:
+- 1
+- 2
+- 3
+- 4
 expected:
   kind: result
-notes: >
-  Net sales = gross - discount - VAT (VAT is included in gross), excluding cancelled
-  receipts and the test store, converted to euro with the rate of the sales day.
-  Returns are negative lines and reduce net sales. Fiscal year 2025 is 2025-03-01 to
-  2026-02-28.
+notes: Tests fiscal-year grouping and daily FX conversion by summing signed net euro sales per country
+  from March 2025 through February 2026, excluding cancellations and test stores.
 reference_sql: |
   SELECT s.country_code,
          SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) AS net_sales_eur

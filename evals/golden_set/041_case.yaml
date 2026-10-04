@@ -1,6 +1,6 @@
 id: '041'
 questions:
-  en: Which three stores had the highest percentage growth in net sales in euro from 2024 to 2025? Give
+  en: Which three stores had the highest relative growth in net sales in euro from 2024 to 2025? Give
     store IDs and fractional growth; break ties by ID.
   hu: Melyik három üzlet nettó árbevétele nőtt a legnagyobb arányban euróban 2024-ről 2025-re? Üzletazonosítót
     és törtben megadott növekedést kérek; holtversenyben az azonosító döntsön.
@@ -58,8 +58,8 @@ reference_sql: |
     store_id
   LIMIT 3
 order_sensitive: true
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests ranked store growth because each store's calendar-2025 net euro sales are compared with its
+  own 2024 base before selecting the top three fractional changes.
 tags: []
 assumption_patterns: {}
 answer_shape: nonempty

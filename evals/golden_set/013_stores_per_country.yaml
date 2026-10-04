@@ -1,16 +1,16 @@
-id: "013"
+id: '013'
 questions:
-  en: "How many stores do we operate in each country?"
-  hu: "Hány üzletet üzemeltetünk országonként?"
+  en: How many stores do we operate in each country?
+  hu: Hány üzletet üzemeltetünk országonként?
 user: carla
 as_of_date: 2026-10-04
 category: reference
-traps: [2]
+traps:
+- 2
 expected:
   kind: result
-notes: >
-  The test store is not a real store and must not be counted. A model that only reads the
-  store table without the is_test_store flag overcounts Hungary by one (12 instead of 11).
+notes: Tests dimension-only filtering because operating-store counts exclude the test store even though
+  no fact-table join is needed.
 reference_sql: |
   SELECT country_code, COUNT(*) AS store_count
   FROM dim_store

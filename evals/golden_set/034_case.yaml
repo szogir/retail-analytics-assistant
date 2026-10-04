@@ -49,8 +49,8 @@ reference_sql: |
   WHERE
     country_code = 'HU' AND YEAR(sales_date) = 2024
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests the implicit unit-based return rate because positive returned units are divided by sold units
+  within Hungary in calendar 2024.
 tags:
 - default_assumption
 assumption_patterns:

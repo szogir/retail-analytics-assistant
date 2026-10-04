@@ -47,8 +47,8 @@ reference_sql: |
   WHERE
     sales_date BETWEEN '2026-03-01' AND '2026-10-03'
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests partial fiscal-year revenue because fiscal 2026 begins March 1 and the available interval
+  ends October 3, with revenue interpreted as net euro sales.
 tags:
 - default_assumption
 assumption_patterns:

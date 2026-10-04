@@ -1,17 +1,19 @@
-id: "006"
+id: '006'
 questions:
-  en: "Which weekday had the highest total net sales in euro in 2025?"
-  hu: "A hét melyik napján volt a legnagyobb az összes nettó árbevétel euróban 2025-ben?"
+  en: Which weekday had the highest total net sales in euro in 2025?
+  hu: A hét melyik napján volt a legnagyobb az összes nettó árbevétel euróban 2025-ben?
 user: carla
 as_of_date: 2026-10-04
 category: ranking
-traps: [1, 2, 3, 4]
+traps:
+- 1
+- 2
+- 3
+- 4
 expected:
   kind: result
-notes: >
-  Convention: a bare year ("in 2025") is the calendar year; only "fiscal" switches.
-  Weekdays are compared on the total net sales of calendar year 2025 (not on a
-  per-day average).
+notes: Tests weekday ranking by comparing total signed net euro sales for each weekday in calendar 2025
+  rather than daily averages.
 reference_sql: |
   SELECT d.weekday
   FROM fact_sales f

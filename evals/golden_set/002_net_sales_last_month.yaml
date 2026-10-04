@@ -1,16 +1,19 @@
-id: "002"
+id: '002'
 questions:
-  en: "What were our total net sales in euro last month?"
-  hu: "Mekkora volt az összes nettó árbevételünk euróban a múlt hónapban?"
+  en: What were our total net sales in euro last month?
+  hu: Mekkora volt az összes nettó árbevételünk euróban a múlt hónapban?
 user: carla
 as_of_date: 2026-10-04
 category: time
-traps: [1, 2, 3, 4]
+traps:
+- 1
+- 2
+- 3
+- 4
 expected:
   kind: result
-notes: >
-  "Last month" is relative to as_of_date 2026-10-04, so it is September 2026 (calendar
-  month). The data ends on 2026-10-03, so September is the last complete month.
+notes: Tests relative-month resolution because the fixed evaluation date makes September 2026 the last
+  complete calendar month.
 reference_sql: |
   SELECT SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) AS net_sales_eur
   FROM fact_sales f

@@ -1,16 +1,19 @@
-id: "007"
+id: '007'
 questions:
-  en: "What share of net sales came from private label products in fiscal year 2025?"
-  hu: "Mekkora volt a saját márkás termékek aránya a nettó árbevételből a 2025-ös pénzügyi évben?"
+  en: What share of net sales came from private label products in fiscal year 2025?
+  hu: Mekkora volt a saját márkás termékek aránya a nettó árbevételből a 2025-ös pénzügyi évben?
 user: carla
 as_of_date: 2026-10-04
 category: ratio
-traps: [1, 2, 3, 4]
+traps:
+- 1
+- 2
+- 3
+- 4
 expected:
   kind: result
-notes: >
-  Private label share = net sales of private label products / total net sales (both in
-  euro, same filters). A ratio of sums, expressed as a fraction between 0 and 1.
+notes: Tests a revenue-weighted private-label share because both the private-label numerator and total
+  denominator use signed net euro sales over fiscal 2025.
 reference_sql: |
   SELECT SUM(CASE WHEN p.is_private_label
                   THEN (f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate

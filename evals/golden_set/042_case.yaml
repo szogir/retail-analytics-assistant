@@ -66,8 +66,8 @@ reference_sql: |
   ORDER BY
     m
 order_sensitive: true
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests consecutive-month comparison because each Hungarian monthly net euro total from February
+  through December 2025 is divided by the preceding month's total.
 tags: []
 assumption_patterns: {}
 answer_shape: nonempty

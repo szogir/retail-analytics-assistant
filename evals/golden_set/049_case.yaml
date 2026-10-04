@@ -8,8 +8,8 @@ category: ambiguous
 traps: []
 expected:
   kind: clarification
-notes: Costs are unavailable and margin is undefined. Ask whether an available sales measure was intended;
-  never substitute net sales silently.
+notes: Tests unavailable metric handling because costs and a margin definition are missing, so an available
+  sales measure must not be substituted silently.
 reviewed: false
 reviewed_on: null
 reviewed_by: null

@@ -52,8 +52,8 @@ reference_sql: |
   GROUP BY
     country_code
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests paired country growth because calendar-2025 net euro revenue is divided by the matching country's
+  calendar-2024 revenue and reduced by one.
 tags:
 - default_assumption
 assumption_patterns:

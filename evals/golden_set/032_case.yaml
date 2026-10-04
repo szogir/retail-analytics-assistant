@@ -48,8 +48,8 @@ reference_sql: |
     AND YEAR(sales_date) = 2025
     AND ISODOW(sales_date) IN (6, 7)
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests weekend receipt filtering by counting distinct non-return Hungarian receipts on Saturdays
+  and Sundays in calendar 2025.
 tags:
 - default_assumption
 assumption_patterns:

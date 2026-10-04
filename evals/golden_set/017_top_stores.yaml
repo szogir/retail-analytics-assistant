@@ -1,17 +1,20 @@
-id: "017"
+id: '017'
 questions:
-  en: "Which 3 stores had the highest net sales in euro in 2025?"
-  hu: "Melyik 3 üzletnek volt a legmagasabb nettó árbevétele euróban 2025-ben?"
+  en: Which 3 stores had the highest net sales in euro in 2025?
+  hu: Melyik 3 üzletnek volt a legmagasabb nettó árbevétele euróban 2025-ben?
 user: carla
 as_of_date: 2026-10-04
 category: ranking
-traps: [1, 2, 3, 4]
+traps:
+- 1
+- 2
+- 3
+- 4
 expected:
   kind: result
 order_sensitive: true
-notes: >
-  Ranking of stores. The test store has sales too (about 20 thousand lines) and would
-  distort a ranking if it were not excluded. The order is part of the answer.
+notes: Tests store ranking because the three largest valid calendar-2025 net euro totals must exclude
+  the test store and preserve rank order.
 reference_sql: |
   SELECT s.store_name,
          SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) AS net_sales_eur

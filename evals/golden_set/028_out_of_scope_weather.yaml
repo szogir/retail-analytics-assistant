@@ -1,16 +1,14 @@
-id: "028"
+id: 028
 questions:
-  en: "What will the weather be like in Vienna tomorrow?"
-  hu: "Milyen idő lesz holnap Bécsben?"
+  en: What will the weather be like in Vienna tomorrow?
+  hu: Milyen idő lesz holnap Bécsben?
 user: carla
 as_of_date: 2026-10-04
 category: out_of_scope
 traps: []
 expected:
   kind: refusal
-notes: >
-  Harmless but not answerable from the sales data. The assistant must say so (intent
-  out_of_scope) and not invent SQL, for example over the holiday table.
+notes: Tests scope handling because tomorrow's weather cannot be answered from the retail dataset.
 reviewed: false
 reviewed_on: null
 reviewed_by: null

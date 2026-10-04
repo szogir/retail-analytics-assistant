@@ -47,8 +47,8 @@ reference_sql: |
   WHERE
     city = 'Budapest' AND sales_date BETWEEN '2024-07-01' AND '2024-12-31'
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests the revenue synonym and city scope by summing valid net euro sales across Budapest stores
+  during July through December 2024.
 tags:
 - default_assumption
 assumption_patterns:

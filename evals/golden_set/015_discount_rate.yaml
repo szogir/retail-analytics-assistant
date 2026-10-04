@@ -1,18 +1,18 @@
-id: "015"
+id: '015'
 questions:
-  en: "What was the discount rate in 2025, i.e. discounts as a share of gross sales?"
-  hu: "Mekkora volt az engedményarány 2025-ben, vagyis az engedmények a bruttó árbevétel hányad részét tették ki?"
+  en: What was the discount rate in 2025?
+  hu: Mekkora volt az engedményarány 2025-ben?
 user: carla
 as_of_date: 2026-10-04
 category: ratio
-traps: [1, 2, 3]
+traps:
+- 1
+- 2
+- 3
 expected:
   kind: result
-notes: >
-  A ratio of two sums (both in euro), never an average of per-line or per-day rates. Both
-  currencies must be converted before the division, otherwise HUF amounts dominate.
-  Convention: all valid lines count, return lines included (their negative amounts are
-  part of the sums), like net and gross sales in the other cases.
+notes: Tests the implicit discount-rate definition because the result is signed euro discounts divided
+  by signed euro gross sales for calendar 2025, not an average of line rates.
 reference_sql: |
   SELECT SUM(f.discount_amount / fx.eur_rate)
            / SUM(f.gross_amount / fx.eur_rate) AS discount_rate
@@ -26,3 +26,10 @@ reference_sql: |
 reviewed: false
 reviewed_on: null
 reviewed_by: null
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - gross
+  hu:
+  - bruttó

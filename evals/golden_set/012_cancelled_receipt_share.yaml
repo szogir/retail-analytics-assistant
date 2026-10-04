@@ -1,20 +1,17 @@
-id: "012"
+id: '012'
 questions:
-  en: "What share of our receipts in 2025 were cancelled?"
-  hu: "A 2025-ös bizonylataink hányad része lett sztornózva?"
+  en: What share of our receipts in 2025 were cancelled?
+  hu: A 2025-ös bizonylataink hányad része lett sztornózva?
 user: carla
 as_of_date: 2026-10-04
 category: ratio
-traps: [1, 2]
+traps:
+- 1
+- 2
 expected:
   kind: result
-notes: >
-  Cancelled receipts are the point of the question, so they must be COUNTED here, not
-  filtered out (the opposite of the usual rule). The test store is excluded. "Receipts"
-  means sales receipts only, as in cases 003 and 004: return receipts are left out of both
-  the numerator and the denominator. Whole receipts are cancelled (a receipt never mixes
-  cancelled and valid lines), so counting distinct receipt ids is exact. The answer is a
-  fraction, not a percentage.
+notes: Tests the cancellation exception because cancelled non-return receipts belong in the numerator
+  and in the full receipt denominator, while test stores remain excluded.
 reference_sql: |
   SELECT COUNT(DISTINCT CASE WHEN f.is_cancelled THEN f.receipt_id END) * 1.0
            / COUNT(DISTINCT f.receipt_id) AS cancelled_share

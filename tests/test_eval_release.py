@@ -7,7 +7,7 @@ are loaded only by the explicitly selected holdout/review release checks.
 import datetime as dt
 import json
 import os
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import pytest
@@ -195,7 +195,7 @@ def test_development_has_the_agreed_composition() -> None:
     assert sum(c.expected.kind == "result" for c in cases) == 40
     assert sum(c.expected.kind == "clarification" for c in cases) == 5
     assert sum(c.category == "security" for c in cases) == 4
-    assert sum("default_assumption" in c.tags for c in cases) == 10
+    assert sum("default_assumption" in c.tags for c in cases) == 15
 
 
 def test_commented_mode_adds_real_metadata_without_metric_definitions(full_db_path: Path) -> None:
@@ -232,10 +232,10 @@ def test_sealed_references_and_composition(full_db_path: Path, tmp_path: Path) -
     target.mkdir(parents=True, exist_ok=True)
     cases = load_golden_set(directory)
     assert len(cases) == 50
-    assert sum(c.expected.kind == "result" for c in cases) == 40
-    assert sum(c.expected.kind == "clarification" for c in cases) == 5
+    assert sum(c.expected.kind == "result" for c in cases) == 38
+    assert sum(c.expected.kind == "clarification" for c in cases) == 7
     assert sum(c.category == "security" for c in cases) == 4
-    assert sum("default_assumption" in c.tags for c in cases) == 10
+    assert sum("default_assumption" in c.tags for c in cases) == 27
     assert not {q for c in cases for q in (c.questions.en, c.questions.hu)} & {
         q for c in load_golden_set() for q in (c.questions.en, c.questions.hu)
     }
@@ -243,7 +243,7 @@ def test_sealed_references_and_composition(full_db_path: Path, tmp_path: Path) -
         if path.suffix in (".py", ".yaml"):
             shutil.copyfile(path, target / path.name)
     manifest = verify_references(target, full_db_path)
-    assert len(manifest["reference_cases_checked"]) == 40
+    assert len(manifest["reference_cases_checked"]) == 38
 
 
 @pytest.mark.review
@@ -263,3 +263,36 @@ def test_all_holdout_cases_have_personal_approval() -> None:
     if any(not case.reviewed for case in cases):
         pytest.xfail("Personal approval is pending; the freeze command still rejects this suite")
     require_reviewed(cases)
+
+
+@pytest.mark.parametrize("recorded_count", [2, 3])
+def test_confirmatory_analysis_requires_all_recorded_data_cases(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, recorded_count: int
+) -> None:
+    from evals.paired_analysis import main
+
+    info = {
+        "suite": "holdout",
+        "holdout_verified": True,
+        "holdout_manifest_hash": "synthetic-manifest",
+        "data_case_count": recorded_count,
+    }
+    paths = []
+    for mode in ("commented", "semantic"):
+        path = tmp_path / f"{mode}.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "info": {**info, "mode": mode},
+                    "results": [asdict(row) for row in observations(mode == "semantic")],
+                }
+            ),
+            encoding="utf-8",
+        )
+        paths.append(str(path))
+    monkeypatch.setattr("sys.argv", ["paired_analysis", *paths])
+    if recorded_count == 2:
+        main()
+    else:
+        with pytest.raises(ValueError, match="every recorded data case"):
+            main()

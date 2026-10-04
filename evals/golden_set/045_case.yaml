@@ -51,8 +51,8 @@ reference_sql: |
   GROUP BY
     country_code
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests percentage scaling because each country's calendar-2025 net euro sales share is multiplied
+  by 100 against the same global total.
 tags: []
 assumption_patterns: {}
 answer_shape: nonempty

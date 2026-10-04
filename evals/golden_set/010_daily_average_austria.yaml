@@ -1,19 +1,19 @@
-id: "010"
+id: '010'
 questions:
-  en: "What was the average daily net sales in euro in Austria in 2025, counting only the days the stores were open?"
-  hu: "Mekkora volt az átlagos napi nettó árbevétel euróban Ausztriában 2025-ben, csak a nyitvatartási napokat számolva?"
+  en: What was the average daily net sales in euro in Austria in 2025?
+  hu: Mekkora volt az átlagos napi nettó árbevétel euróban Ausztriában 2025-ben?
 user: carla
 as_of_date: 2026-10-04
 category: ratio
-traps: [1, 2, 4, closures]
+traps:
+- 1
+- 2
+- 4
+- closures
 expected:
   kind: result
-notes: >
-  Convention: a bare year ("in 2025") is the calendar year; only "fiscal" switches.
-  Austrian stores are closed on Sundays and on public holidays, so there are no sales
-  rows on those days. Average per trading day = total net sales / number of distinct
-  sales dates, NOT divided by 365. Calendar year 2025. Austria sells in euro, so no
-  currency conversion is needed.
+notes: Tests the implicit trading-day convention because Austrian closed days are excluded from the denominator
+  of calendar-2025 average daily net sales.
 reference_sql: |
   SELECT SUM(f.gross_amount - f.discount_amount - f.vat_amount)
          / COUNT(DISTINCT f.sales_date) AS avg_daily_net_sales_eur
@@ -27,3 +27,10 @@ reference_sql: |
 reviewed: false
 reviewed_on: null
 reviewed_by: null
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - trading|open|sales days
+  hu:
+  - nyitva|értékesítési nap|forgalmazási nap

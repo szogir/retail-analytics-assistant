@@ -8,7 +8,8 @@ category: ambiguous
 traps: []
 expected:
   kind: clarification
-notes: Campaign identity and dates are not present. Ask for the comparison windows.
+notes: Tests missing comparison windows because the dataset does not identify the campaign or its before-and-after
+  dates.
 reviewed: false
 reviewed_on: null
 reviewed_by: null

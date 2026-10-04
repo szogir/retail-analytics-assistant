@@ -1,7 +1,7 @@
 id: '044'
 questions:
-  en: How many valid sales receipts contained both Dairy and Bakery products in 2025?
-  hu: Hány érvényes eladási bizonylaton szerepelt tejtermék és pékáru is 2025-ben?
+  en: How many receipts contained both Dairy and Bakery products in 2025?
+  hu: Hány bizonylaton szerepelt tejtermék és pékáru is 2025-ben?
 user: carla
 as_of_date: '2026-10-04'
 category: composition
@@ -56,10 +56,15 @@ reference_sql: |
         category_en = 'Bakery') > 0
   )
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
-tags: []
-assumption_patterns: {}
+notes: Tests receipt-level category intersection because a receipt is counted once only when it contains
+  both Dairy and Bakery sales lines.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - exclud.*return|without.*return|sales.only|return.*exclud
+  hu:
+  - visszáru.*(kizár|nélkül)|visszárut.*nem|csak.*eladás
 answer_shape: nonempty
 reviewed: false
 reviewed_on: null

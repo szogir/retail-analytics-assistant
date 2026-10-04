@@ -1,8 +1,7 @@
 id: '035'
 questions:
-  en: How much milk did we sell in September 2026, in units? Include both milk varieties and both brands.
-  hu: Mennyi tejet adtunk el 2026 szeptemberében, darabban? Mindkét tejfajtát és mindkét márkát számold
-    bele.
+  en: How many units of milk did we sell in September 2026?
+  hu: Mennyi tejet adtunk el 2026 szeptemberében, darabban?
 user: carla
 as_of_date: '2026-10-04'
 category: aggregation
@@ -50,15 +49,19 @@ reference_sql: |
     )
     AND sales_date BETWEEN '2026-09-01' AND '2026-09-30'
 order_sensitive: false
-notes: Milk means the whole and semi-skimmed 1 l products, both labels, not all Dairy or sour cream. Units
-  sold exclude returns.
+notes: Tests natural milk wording because the documented milk group includes whole and semi-skimmed one-litre
+  products of both labels while sold units exclude returns.
 tags:
 - default_assumption
 assumption_patterns:
   en:
   - exclud.*return|without.*return|sold|sales.only
+  - whole
+  - semi.?skimmed
   hu:
   - visszáru.*(kizár|nélkül)|eladott|értékesített
+  - teljes
+  - félzsíros
 answer_shape: nonempty
 reviewed: false
 reviewed_on: null

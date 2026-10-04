@@ -2,8 +2,10 @@
 
 ## Current release state
 
-The development and held-out suites each contain 50 bilingual cases: 40 data results,
-five clarifications, four security refusals and one unrelated request. All reference
+Both suites contain 50 bilingual cases. Development has 40 data results and five
+clarifications; holdout has 38 data results and seven clarifications after the
+pre-review quality amendment (Decision 10). Each has four security refusals and one
+unrelated request. All 78 data reference
 results have independent DataFrame calculations. Both suites are **candidates awaiting
 human review**, not frozen benchmark releases. `reviewed: false` is deliberate.
 

@@ -1,17 +1,19 @@
-id: "020"
+id: '020'
 questions:
-  en: "What was the average basket value in Hungarian forint in Hungary in December 2025?"
-  hu: "Mekkora volt az átlagos kosárérték forintban Magyarországon 2025 decemberében?"
+  en: What was the average basket value in Hungarian forint in Hungary in December 2025?
+  hu: Mekkora volt az átlagos kosárérték forintban Magyarországon 2025 decemberében?
 user: carla
 as_of_date: 2026-10-04
 category: ratio
-traps: [1, 2, 4, 5]
+traps:
+- 1
+- 2
+- 4
+- 5
 expected:
   kind: result
-notes: >
-  Local currency on purpose: no conversion is needed, and a model that converts to euro
-  anyway gives a wrong answer. Average basket = net sales / number of distinct sales
-  receipts (returns left out of both, as in case 004), never an average of averages.
+notes: Tests requested local currency because the December-2025 Hungarian basket uses net HUF receipt
+  totals and excludes returns without converting to EUR.
 reference_sql: |
   SELECT SUM(f.gross_amount - f.discount_amount - f.vat_amount)
            / COUNT(DISTINCT f.receipt_id) AS avg_basket_huf

@@ -62,8 +62,8 @@ reference_sql: |
   QUALIFY
     ROW_NUMBER() OVER (PARTITION BY country_code ORDER BY n DESC, category_en) = 1
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests ranking within groups because each country independently selects its highest net euro sales
+  category for 2025 with the requested alphabetical tie-break.
 tags: []
 assumption_patterns: {}
 answer_shape: nonempty

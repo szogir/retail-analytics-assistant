@@ -250,6 +250,7 @@ def main(
         ).hexdigest(),
         holdout_manifest_hash=manifest_hash,
         holdout_verified=bool(manifest_hash),
+        data_case_count=sum(c.expected.kind in ("result", "result_scoped") for c in cases),
     )
     output_dir = directory / "artifacts"
     output_dir.mkdir(parents=True, exist_ok=True)

@@ -1,7 +1,7 @@
 id: '046'
 questions:
-  en: How many catalogue products had no valid sale anywhere on 1 January 2025?
-  hu: Hány katalógusbeli termékből nem volt sehol érvényes eladás 2025. január 1-jén?
+  en: How many products in our catalogue did not sell anywhere on 1 January 2025?
+  hu: Hány katalógusbeli termékből nem adtunk el sehol 2025. január 1-jén?
 user: carla
 as_of_date: '2026-10-04'
 category: coverage
@@ -51,10 +51,15 @@ reference_sql: |
         v.product_id = p.product_id AND v.sales_date = '2025-01-01' AND NOT v.is_return
     )
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
-tags: []
-assumption_patterns: {}
+notes: Tests catalogue coverage because products without a non-return sale on the specified covered holiday
+  are retained through the product dimension.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - exclud.*return|without.*return|sales.only|return.*exclud
+  hu:
+  - visszáru.*(kizár|nélkül)|visszárut.*nem|csak.*eladás
 answer_shape: nonempty
 reviewed: false
 reviewed_on: null

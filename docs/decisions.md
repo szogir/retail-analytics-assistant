@@ -253,3 +253,23 @@ A filesystem sandbox that excludes the directory, or a separately restricted acc
 is needed for an OS-enforced boundary; this change does not claim to establish one.
 A locally generated timestamp is not an independently witnessed timestamp; the earlier
 committed hash provides the content commitment and the recorded development sequence.
+
+
+## Decision 10: pre-review question quality amendment
+
+Before any semantic implementation or holdout model evaluation, remove calculation
+hints from natural-language questions without extending the business contract.
+Development retains 50 cases: 40 data, 5 clarification, 4 security and 1 out-of-scope;
+15 data cases explicitly test a documented default. Eight development cases have
+question wording corrections. Every case now has a specific reference rationale.
+
+The external suite retains 50 cases. Quality review changes 21 questions and converts
+two data cases into clarification cases because the contract does not define their
+requested measures. Its composition is now 38 data, 7 clarification, 4 security and
+1 out-of-scope, with 27 default-assumption cases. These counts supersede the initial
+40-data/5-clarification allocation; the success threshold and paired case-bootstrap
+procedure remain unchanged. The primary denominator is 38 independent holdout cases,
+with languages and repetitions clustered within each case. All 78 remaining data
+references must agree with independent dataframe calculations before owner review.
+Run artifacts record their actual data-case count; confirmatory analysis rejects
+incomplete coverage. All personal approvals remain pending.

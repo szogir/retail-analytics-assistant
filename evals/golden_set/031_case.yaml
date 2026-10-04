@@ -50,8 +50,8 @@ reference_sql: |
     AND NOT is_return
     AND sales_date BETWEEN '2025-01-01' AND '2025-03-31'
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests the implicit basket convention by averaging non-return net euro receipt totals at Graz Nord
+  during calendar Q1 2025.
 tags:
 - default_assumption
 assumption_patterns:

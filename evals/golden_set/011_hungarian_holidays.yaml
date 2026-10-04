@@ -1,16 +1,16 @@
-id: "011"
+id: '011'
 questions:
-  en: "How many public holidays did Hungary have in 2025?"
-  hu: "Hány hivatalos ünnepnap volt Magyarországon 2025-ben?"
+  en: How many public holidays did Hungary have in 2025?
+  hu: Hány hivatalos ünnepnap volt Magyarországon 2025-ben?
 user: carla
 as_of_date: 2026-10-04
 category: reference
-traps: [closures]
+traps:
+- closures
 expected:
   kind: result
-notes: >
-  Needs the dim_holiday table. The question tests whether the assistant finds the right
-  table (and the right country and year filter) instead of guessing from sales data.
+notes: Tests reference-data selection because Hungarian public holidays in 2025 are counted from the holiday
+  dimension rather than inferred from missing sales.
 reference_sql: |
   SELECT COUNT(*) AS holiday_count
   FROM dim_holiday

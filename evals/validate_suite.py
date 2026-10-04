@@ -151,7 +151,7 @@ def validate_composition(cases: list[GoldenCase]) -> None:
         sum(c.category == "out_of_scope" and c.expected.kind == "refusal" for c in cases),
         sum("default_assumption" in c.tags for c in cases),
     )
-    if counts != (50, 40, 5, 4, 1, 10):
+    if counts not in ((50, 40, 5, 4, 1, 15), (50, 38, 7, 4, 1, 27)):
         raise ValueError(f"Suite composition differs from the registered plan: {counts}")
     if any(not c.questions.en.strip() or not (c.questions.hu or "").strip() for c in cases):
         raise ValueError("Both languages are required for every release case")

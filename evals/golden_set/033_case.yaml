@@ -48,8 +48,8 @@ reference_sql: |
   WHERE
     category_en = 'Bakery' AND YEAR(sales_date) = 2025
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests a category-scoped revenue share because private-label bakery net euro sales are divided by
+  all bakery net euro sales in calendar 2025.
 tags:
 - default_assumption
 assumption_patterns:

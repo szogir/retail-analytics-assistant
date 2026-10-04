@@ -47,8 +47,8 @@ reference_sql: |
   WHERE
     country_code = 'AT' AND sales_date BETWEEN '2025-05-01' AND '2025-05-31'
 order_sensitive: false
-notes: Apply the shared business contract. The independent DataFrame oracle checks this reference result;
-  human approval is still pending.
+notes: Tests the implicit daily-average denominator by dividing Austria's May-2025 net euro sales by its
+  distinct trading dates.
 tags:
 - default_assumption
 assumption_patterns:

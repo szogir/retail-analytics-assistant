@@ -8,7 +8,7 @@ category: ambiguous
 traps: []
 expected:
   kind: clarification
-notes: No metric, period or target for underperformance is specified. Ask rather than invent a threshold.
+notes: Tests necessary clarification because underperformance has no specified metric, period or target.
 reviewed: false
 reviewed_on: null
 reviewed_by: null

@@ -1,18 +1,17 @@
-id: "003"
+id: '003'
 questions:
-  en: "How many receipts did we have in Hungary in 2025?"
-  hu: "Hány bizonylatunk volt Magyarországon 2025-ben?"
+  en: How many receipts did we have in Hungary in 2025?
+  hu: Hány bizonylatunk volt Magyarországon 2025-ben?
 user: carla
 as_of_date: 2026-10-04
 category: aggregation
-traps: [1, 2]
+traps:
+- 1
+- 2
 expected:
   kind: result
-notes: >
-  Receipt count = distinct sales receipts: excluding cancelled receipts, return receipts
-  and the test store. A receipt has several lines, so COUNT(*) would be wrong.
-  Convention: a bare year ("in 2025") means the calendar year; only the word "fiscal"
-  switches to the fiscal year.
+notes: Tests receipt grain because the answer counts distinct non-return sales receipts in Hungary during
+  calendar 2025 rather than counting receipt lines.
 reference_sql: |
   SELECT COUNT(DISTINCT f.receipt_id) AS receipt_count
   FROM fact_sales f

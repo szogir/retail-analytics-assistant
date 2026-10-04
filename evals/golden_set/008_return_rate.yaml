@@ -1,17 +1,17 @@
-id: "008"
+id: 008
 questions:
-  en: "What was the return rate in fiscal year 2025?"
-  hu: "Mekkora volt a visszáru-arány a 2025-ös pénzügyi évben?"
+  en: What was the return rate in fiscal year 2025?
+  hu: Mekkora volt a visszáru-arány a 2025-ös pénzügyi évben?
 user: carla
 as_of_date: 2026-10-04
 category: ratio
-traps: [1, 2]
+traps:
+- 1
+- 2
 expected:
   kind: result
-notes: >
-  Return rate = returned units / sold units. Returned lines have negative quantity and
-  is_return = TRUE; the result is a fraction (not a percentage). Cancelled receipts and
-  the test store are excluded.
+notes: Tests return-rate signs and denominators because returned quantities are negated and divided by
+  sold quantities, yielding a fraction for fiscal 2025.
 reference_sql: |
   SELECT SUM(CASE WHEN f.is_return THEN -f.quantity END) * 1.0
          / SUM(CASE WHEN NOT f.is_return THEN f.quantity END) AS return_rate

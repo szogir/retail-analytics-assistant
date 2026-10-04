@@ -47,8 +47,8 @@ reference_sql: |
   WHERE
     YEAR(sales_date) = 2022
 order_sensitive: false
-notes: 2022 is outside data coverage. The aggregate is NULL, not zero; assumptions must state that there
-  is no data.
+notes: Tests missing time coverage because the scalar 2022 sales aggregate is NULL and must be explained
+  as absent data rather than zero turnover.
 tags: []
 assumption_patterns:
   en:

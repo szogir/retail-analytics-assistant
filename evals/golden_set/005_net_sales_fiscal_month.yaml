@@ -1,16 +1,19 @@
-id: "005"
+id: '005'
 questions:
-  en: "What were the net sales in euro in fiscal month 3 of fiscal year 2025?"
-  hu: "Mekkora volt a nettó árbevétel euróban a 2025-ös pénzügyi év 3. pénzügyi hónapjában?"
+  en: What were the net sales in euro in fiscal month 3 of fiscal year 2025?
+  hu: Mekkora volt a nettó árbevétel euróban a 2025-ös pénzügyi év 3. pénzügyi hónapjában?
 user: carla
 as_of_date: 2026-10-04
 category: time
-traps: [1, 2, 3, 4, fiscal]
+traps:
+- 1
+- 2
+- 3
+- 4
+- fiscal
 expected:
   kind: result
-notes: >
-  The fiscal year starts on 1 March, so fiscal month 3 is May (2025-05-01 to
-  2025-05-31). Reading it as the calendar month March is the trap.
+notes: Tests the fiscal-month offset because month three of fiscal 2025 is May 2025 rather than March.
 reference_sql: |
   SELECT SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) AS net_sales_eur
   FROM fact_sales f

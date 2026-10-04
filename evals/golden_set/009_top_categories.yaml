@@ -1,17 +1,20 @@
-id: "009"
+id: 009
 questions:
-  en: "What are the top 5 product categories by net sales in euro in 2025?"
-  hu: "Melyik az 5 legnagyobb nettó árbevételű termékkategória euróban 2025-ben (az angol kategórianevekkel)?"
+  en: What are the top 5 product categories by net sales in euro in 2025?
+  hu: Melyik az 5 legnagyobb nettó árbevételű termékkategória euróban 2025-ben (az angol kategórianevekkel)?
 user: carla
 as_of_date: 2026-10-04
 category: ranking
-traps: [1, 2, 3, 4]
+traps:
+- 1
+- 2
+- 3
+- 4
 expected:
   kind: result
 order_sensitive: true
-notes: >
-  Convention: a bare year ("in 2025") is the calendar year; only "fiscal" switches.
-  Ranking by net sales in euro, calendar year 2025, English category names.
+notes: Tests category ranking because the five largest calendar-2025 net euro totals must be returned
+  in descending order with English category names.
 reference_sql: |
   SELECT p.category_en,
          SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) AS net_sales_eur
