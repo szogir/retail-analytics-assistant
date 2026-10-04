@@ -53,9 +53,10 @@ select = ["E", "F", "I", "B", "UP", "SIM", "S"]
 python_version = "3.12"
 strict = true
 mypy_path = "src"
-packages = ["retail_assistant"]
+packages = ["retail_assistant", "data_gen"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]  # lets tests import the top-level `data_gen` package
 markers = ["live: calls a real LLM API (excluded by default; run with -m live)"]
 addopts = "-m 'not live'"

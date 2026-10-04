@@ -60,3 +60,27 @@ accuracy and enforced permissions, not a polished interface.
 
 **Consequences.** The pipeline is a plain function with a clean boundary, so an API
 layer can be added without changing it.
+
+---
+
+## 4. Synthetic data with a shifted fiscal year
+
+**Context.** The project must show that a semantic layer measurably improves accuracy.
+That needs data where the correct answer is known and where the classic traps exist on
+purpose. Real or public retail data cannot guarantee that, and has licence limits.
+
+**Decision.** Generate fictional data with a fixed seed. Conventions:
+- The fiscal year starts on 1 March and is named after the calendar year in which it
+  starts (2025-03-01 .. 2026-02-28 is fiscal year 2025). `fiscal_month` is 1..12 with
+  March = 1. `fiscal_week` counts 7-day blocks from the fiscal year start (1..53).
+- VAT rates differ by country and product category. They are simplified and are not
+  tax-law references.
+- The catalogue and the store list are fixed tables, only base prices are random.
+
+**Alternatives considered.**
+- *Public datasets* - no known traps, no two-currency or per-store structure.
+- *Faker-generated names* - unrealistic names, no matching EN/HU pairs, extra dependency.
+- *Fiscal year = calendar year* - the `fiscal_*` columns would add nothing to test.
+
+**Consequences.** Measured accuracy is an upper estimate: real data is noisier. This
+goes into the README limitations.
