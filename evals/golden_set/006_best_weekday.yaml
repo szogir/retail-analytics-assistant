@@ -1,7 +1,7 @@
 id: "006"
 questions:
   en: "Which weekday had the highest total net sales in euro in 2025?"
-  hu: null
+  hu: "A hét melyik napján volt a legnagyobb az összes nettó árbevétel euróban 2025-ben?"
 user: carla
 as_of_date: 2026-10-04
 category: ranking

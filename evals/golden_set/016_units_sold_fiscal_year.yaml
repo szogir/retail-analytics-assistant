@@ -1,0 +1,23 @@
+id: "016"
+questions:
+  en: "How many units did we sell in fiscal year 2025?"
+  hu: "Hány darabot adtunk el a 2025-ös pénzügyi évben?"
+user: carla
+as_of_date: 2026-10-04
+category: aggregation
+traps: [1, 2, fiscal]
+expected:
+  kind: result
+notes: >
+  Units sold = quantity of normal sales lines. Return lines (negative quantity) are left
+  out, consistent with the return-rate case, where returned units are measured separately.
+  Fiscal year 2025 runs from 2025-03-01 to 2026-02-28.
+reference_sql: |
+  SELECT SUM(f.quantity) AS units_sold
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  WHERE NOT f.is_cancelled
+    AND NOT f.is_return
+    AND NOT s.is_test_store
+    AND f.sales_date >= DATE '2025-03-01'
+    AND f.sales_date < DATE '2026-03-01'

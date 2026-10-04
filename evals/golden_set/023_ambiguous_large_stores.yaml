@@ -1,0 +1,14 @@
+id: "023"
+questions:
+  en: "Show me the sales of the large stores."
+  hu: "Mutasd meg a nagy üzletek eladásait."
+user: carla
+as_of_date: 2026-10-04
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: >
+  Ambiguous on purpose: nothing in the data defines a "large" store (floor area is not
+  stored, and sales volume is no definition), and the time period is missing as well. The
+  right behaviour is to ask what "large" means instead of inventing a threshold.

@@ -42,7 +42,7 @@ def tables(full_db_path: Path, tmp_path_factory: pytest.TempPathFactory) -> dict
 @pytest.fixture(scope="module")
 def lines(tables: dict[str, pl.DataFrame]) -> pl.DataFrame:
     """Valid sales lines (not cancelled, not a test store) with euro net sales."""
-    stores = tables["dim_store"].select("store_id", "country_code", "is_test_store")
+    stores = tables["dim_store"].select("store_id", "store_name", "country_code", "is_test_store")
     fx = tables["fx_rate"].rename({"rate_date": "sales_date"})
     products = tables["dim_product"].select("product_id", "category_en", "is_private_label")
     dates = tables["dim_date"].select(
@@ -63,13 +63,19 @@ def lines(tables: dict[str, pl.DataFrame]) -> pl.DataFrame:
         .with_columns(
             net_local=pl.col("gross_amount") - pl.col("discount_amount") - pl.col("vat_amount")
         )
-        .with_columns(net_eur=pl.col("net_local") / pl.col("eur_rate"))
+        .with_columns(
+            net_eur=pl.col("net_local") / pl.col("eur_rate"),
+            gross_eur=pl.col("gross_amount") / pl.col("eur_rate"),
+            discount_eur=pl.col("discount_amount") / pl.col("eur_rate"),
+        )
     )
 
 
 def reference(db: duckdb.DuckDBPyConnection, case_id: str) -> list[tuple[object, ...]]:
     """Run the reference SQL of a case."""
-    rows = db.execute(CASES[case_id].reference_sql).fetchall()
+    sql = CASES[case_id].reference_sql
+    assert sql is not None
+    rows = db.execute(sql).fetchall()
     return [tuple(float(v) if isinstance(v, Decimal) else v for v in row) for row in rows]
 
 
@@ -185,6 +191,108 @@ def test_010_daily_average_austria_2025(lines: pl.DataFrame, db: duckdb.DuckDBPy
 def test_011_hungary_had_13_holidays_in_2025(db: duckdb.DuckDBPyConnection) -> None:
     # The generator has 13 Hungarian holiday rules and all of them fall into 2025.
     assert reference(db, "011") == [(13,)]
+
+
+def test_012_cancelled_share_2025(
+    tables: dict[str, pl.DataFrame], db: duckdb.DuckDBPyConnection
+) -> None:
+    # Here the cancelled receipts are the subject, so the "valid lines" frame is not used.
+    test_stores = tables["dim_store"].filter(pl.col("is_test_store"))["store_id"].to_list()
+    sales = calendar_2025(
+        tables["fact_sales"].filter(~pl.col("store_id").is_in(test_stores) & ~pl.col("is_return"))
+    )
+    per_receipt = sales.group_by("receipt_id").agg(pl.col("is_cancelled").any())
+    share = per_receipt["is_cancelled"].sum() / per_receipt.height
+    assert reference(db, "012")[0][0] == pytest.approx(share, rel=REL)
+    assert 0.005 < share < 0.1  # the generator builds in a few percent of cancellations
+
+
+def test_013_store_counts_without_the_test_store(
+    tables: dict[str, pl.DataFrame], db: duckdb.DuckDBPyConnection
+) -> None:
+    stores = tables["dim_store"]
+    expected = {
+        country: stores.filter(
+            (pl.col("country_code") == country) & ~pl.col("is_test_store")
+        ).height
+        for country in ("AT", "HU")
+    }
+    assert dict(reference(db, "013")) == expected  # type: ignore[arg-type]
+    # The trap: with the test store, Hungary would have one store more.
+    assert stores.filter(pl.col("country_code") == "HU").height == expected["HU"] + 1
+
+
+def test_014_gross_sales_hungary_september_2026(
+    lines: pl.DataFrame, db: duckdb.DuckDBPyConnection
+) -> None:
+    window = between(lines, dt.date(2026, 9, 1), dt.date(2026, 9, 30)).filter(
+        pl.col("country_code") == "HU"
+    )
+    assert reference(db, "014")[0][0] == pytest.approx(window["gross_eur"].sum(), rel=REL)
+
+
+def test_015_discount_rate_2025(lines: pl.DataFrame, db: duckdb.DuckDBPyConnection) -> None:
+    window = calendar_2025(lines)
+    expected = window["discount_eur"].sum() / window["gross_eur"].sum()
+    assert reference(db, "015")[0][0] == pytest.approx(expected, rel=REL)
+    assert 0 < expected < 0.5  # a fraction, not a percentage
+
+
+def test_016_units_sold_fiscal_2025(lines: pl.DataFrame, db: duckdb.DuckDBPyConnection) -> None:
+    window = between(lines, dt.date(2025, 3, 1), dt.date(2026, 2, 28)).filter(~pl.col("is_return"))
+    assert reference(db, "016")[0][0] == window["quantity"].sum()
+
+
+def test_017_top_3_stores_2025(lines: pl.DataFrame, db: duckdb.DuckDBPyConnection) -> None:
+    totals = (
+        calendar_2025(lines)
+        .group_by("store_name")
+        .agg(pl.col("net_eur").sum())
+        .sort("net_eur", descending=True)
+        .head(3)
+    )
+    actual = reference(db, "017")
+    assert [row[0] for row in actual] == totals["store_name"].to_list()
+    for row, expected in zip(actual, totals["net_eur"].to_list(), strict=True):
+        assert row[1] == pytest.approx(expected, rel=REL)
+
+
+def test_018_year_to_date_2026(lines: pl.DataFrame, db: duckdb.DuckDBPyConnection) -> None:
+    window = between(lines, dt.date(2026, 1, 1), dt.date(2026, 10, 3))
+    assert reference(db, "018")[0][0] == pytest.approx(window["net_eur"].sum(), rel=REL)
+
+
+def test_019_december_is_the_best_month_2025(
+    lines: pl.DataFrame, db: duckdb.DuckDBPyConnection
+) -> None:
+    months = (
+        calendar_2025(lines)
+        .with_columns(month=pl.col("sales_date").dt.month())
+        .group_by("month")
+        .agg(pl.col("net_eur").sum())
+        .sort("net_eur", descending=True)
+    )
+    assert reference(db, "019") == [(months["month"][0],)] == [(12,)]
+
+
+def test_020_average_basket_huf_december_2025(
+    lines: pl.DataFrame, db: duckdb.DuckDBPyConnection
+) -> None:
+    window = between(lines, dt.date(2025, 12, 1), dt.date(2025, 12, 31)).filter(
+        (pl.col("country_code") == "HU") & ~pl.col("is_return")
+    )
+    receipts = window.group_by("receipt_id").agg(pl.col("net_local").sum())
+    expected = float(receipts["net_local"].mean())  # type: ignore[arg-type]
+    assert reference(db, "020")[0][0] == pytest.approx(expected, rel=REL)
+
+
+def test_021_average_net_sales_per_store_2025(
+    lines: pl.DataFrame, db: duckdb.DuckDBPyConnection
+) -> None:
+    per_store = calendar_2025(lines).group_by("store_id").agg(pl.col("net_eur").sum())
+    assert per_store.height == 19  # the test store is already filtered out of `lines`
+    expected = float(per_store["net_eur"].mean())  # type: ignore[arg-type]
+    assert reference(db, "021")[0][0] == pytest.approx(expected, rel=REL)
 
 
 def test_fiscal_calendar_matches_the_case_notes(tables: dict[str, pl.DataFrame]) -> None:

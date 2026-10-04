@@ -1,7 +1,7 @@
 id: "005"
 questions:
   en: "What were the net sales in euro in fiscal month 3 of fiscal year 2025?"
-  hu: null
+  hu: "Mekkora volt a nettó árbevétel euróban a 2025-ös pénzügyi év 3. pénzügyi hónapjában?"
 user: carla
 as_of_date: 2026-10-04
 category: time

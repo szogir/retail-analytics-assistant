@@ -1,0 +1,24 @@
+id: "018"
+questions:
+  en: "What are our net sales in euro year to date?"
+  hu: "Mekkora a nettó árbevételünk euróban az év eleje óta?"
+user: carla
+as_of_date: 2026-10-04
+category: time
+traps: [1, 2, 3, 4]
+expected:
+  kind: result
+notes: >
+  Relative time expression, resolved with as_of_date (2026-10-04). Convention: "year to
+  date" is the calendar year, from 2026-01-01 up to and including yesterday (2026-10-03,
+  the last day with data). The assistant must get today's date from the prompt, not from
+  its own clock.
+reference_sql: |
+  SELECT SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) AS net_sales_eur
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+  WHERE NOT f.is_cancelled
+    AND NOT s.is_test_store
+    AND f.sales_date >= DATE '2026-01-01'
+    AND f.sales_date < DATE '2026-10-04'

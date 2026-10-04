@@ -1,7 +1,7 @@
 id: "002"
 questions:
   en: "What were our total net sales in euro last month?"
-  hu: null
+  hu: "Mekkora volt az összes nettó árbevételünk euróban a múlt hónapban?"
 user: carla
 as_of_date: 2026-10-04
 category: time

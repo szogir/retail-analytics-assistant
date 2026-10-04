@@ -1,0 +1,26 @@
+id: "012"
+questions:
+  en: "What share of our receipts in 2025 were cancelled?"
+  hu: "A 2025-ös bizonylataink hányad része lett sztornózva?"
+user: carla
+as_of_date: 2026-10-04
+category: ratio
+traps: [1, 2]
+expected:
+  kind: result
+notes: >
+  Cancelled receipts are the point of the question, so they must be COUNTED here, not
+  filtered out (the opposite of the usual rule). The test store is excluded. "Receipts"
+  means sales receipts only, as in cases 003 and 004: return receipts are left out of both
+  the numerator and the denominator. Whole receipts are cancelled (a receipt never mixes
+  cancelled and valid lines), so counting distinct receipt ids is exact. The answer is a
+  fraction, not a percentage.
+reference_sql: |
+  SELECT COUNT(DISTINCT CASE WHEN f.is_cancelled THEN f.receipt_id END) * 1.0
+           / COUNT(DISTINCT f.receipt_id) AS cancelled_share
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  WHERE NOT s.is_test_store
+    AND NOT f.is_return
+    AND f.sales_date >= DATE '2025-01-01'
+    AND f.sales_date < DATE '2026-01-01'

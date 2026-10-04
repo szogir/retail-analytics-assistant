@@ -1,0 +1,25 @@
+id: "014"
+questions:
+  en: "What were the gross sales in euro in Hungary in September 2026?"
+  hu: "Mekkora volt a bruttó árbevétel euróban Magyarországon 2026 szeptemberében?"
+user: carla
+as_of_date: 2026-10-04
+category: aggregation
+traps: [1, 2, 3]
+expected:
+  kind: result
+notes: >
+  Hungarian lines are booked in HUF, so every line must be converted with the daily rate
+  of its own sales date before summing. Gross sales are the amount BEFORE discount and
+  including VAT (no deduction). Convention: gross sales sum all valid lines, returns
+  included (they are negative), like net sales in the other cases.
+reference_sql: |
+  SELECT SUM(f.gross_amount / fx.eur_rate) AS gross_sales_eur
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+  WHERE NOT f.is_cancelled
+    AND NOT s.is_test_store
+    AND s.country_code = 'HU'
+    AND f.sales_date >= DATE '2026-09-01'
+    AND f.sales_date < DATE '2026-10-01'

@@ -1,0 +1,25 @@
+id: "019"
+questions:
+  en: "Which calendar month of 2025 had the highest net sales in euro? Give the month number (1-12)."
+  hu: "2025 melyik naptári hónapjában volt a legmagasabb a nettó árbevétel euróban? Add meg a hónap sorszámát (1-12)."
+user: carla
+as_of_date: 2026-10-04
+category: ranking
+traps: [1, 2, 3, 4]
+expected:
+  kind: result
+notes: >
+  Tests the seasonal pattern (December peak). The question asks for the month number so
+  that the answer has one unambiguous format.
+reference_sql: |
+  SELECT MONTH(f.sales_date) AS month_number
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+  WHERE NOT f.is_cancelled
+    AND NOT s.is_test_store
+    AND f.sales_date >= DATE '2025-01-01'
+    AND f.sales_date < DATE '2026-01-01'
+  GROUP BY MONTH(f.sales_date)
+  ORDER BY SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) DESC
+  LIMIT 1

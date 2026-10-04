@@ -1,7 +1,7 @@
 id: "001"
 questions:
   en: "What were the net sales in euro by country in fiscal year 2025?"
-  hu: null
+  hu: "Mekkora volt az országonkénti nettó árbevétel euróban a 2025-ös pénzügyi évben?"
 user: carla
 as_of_date: 2026-10-04
 category: aggregation

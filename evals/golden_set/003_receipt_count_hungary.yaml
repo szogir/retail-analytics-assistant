@@ -1,7 +1,7 @@
 id: "003"
 questions:
   en: "How many receipts did we have in Hungary in 2025?"
-  hu: null
+  hu: "Hány bizonylatunk volt Magyarországon 2025-ben?"
 user: carla
 as_of_date: 2026-10-04
 category: aggregation

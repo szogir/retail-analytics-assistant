@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 GOLDEN_SET_DIR = Path(__file__).parent / "golden_set"
 
@@ -56,7 +56,9 @@ class GoldenCase(BaseModel):
         category: Kind of question (aggregation, ratio, time, ranking, reference).
         traps: Which built-in data traps the question touches (1-5, see data_gen.facts).
         expected: The expected answer kind.
-        reference_sql: SQL whose result is the correct answer.
+        reference_sql: SQL whose result is the correct answer. Required for the kinds
+            `result` and `result_scoped`; must be absent for `clarification` and `refusal`,
+            because there the correct behaviour is NOT to return a table.
         order_sensitive: True if the row order is part of the answer (rankings).
         notes: Why the case exists and how the answer is defined.
     """
@@ -70,9 +72,19 @@ class GoldenCase(BaseModel):
     category: str
     traps: list[int | str]
     expected: Expected
-    reference_sql: str
+    reference_sql: str | None = None
     order_sensitive: bool = False
     notes: str = ""
+
+    @model_validator(mode="after")
+    def _reference_sql_matches_kind(self) -> GoldenCase:
+        """Check that a reference SQL exists exactly when a result table is expected."""
+        expects_table = self.expected.kind in ("result", "result_scoped")
+        if expects_table and not (self.reference_sql or "").strip():
+            raise ValueError(f"case {self.id}: kind '{self.expected.kind}' needs reference_sql")
+        if not expects_table and self.reference_sql:
+            raise ValueError(f"case {self.id}: kind '{self.expected.kind}' must not have SQL")
+        return self
 
 
 def load_golden_set(directory: Path = GOLDEN_SET_DIR) -> list[GoldenCase]:

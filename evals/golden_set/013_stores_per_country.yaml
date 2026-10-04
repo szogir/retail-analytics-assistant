@@ -1,0 +1,19 @@
+id: "013"
+questions:
+  en: "How many stores do we operate in each country?"
+  hu: "Hány üzletet üzemeltetünk országonként?"
+user: carla
+as_of_date: 2026-10-04
+category: reference
+traps: [2]
+expected:
+  kind: result
+notes: >
+  The test store is not a real store and must not be counted. A model that only reads the
+  store table without the is_test_store flag overcounts Hungary by one (12 instead of 11).
+reference_sql: |
+  SELECT country_code, COUNT(*) AS store_count
+  FROM dim_store
+  WHERE NOT is_test_store
+  GROUP BY country_code
+  ORDER BY country_code

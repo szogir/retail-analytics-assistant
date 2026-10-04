@@ -1,0 +1,23 @@
+id: "021"
+questions:
+  en: "What were the average net sales in euro per store in 2025?"
+  hu: "Mekkora volt az átlagos nettó árbevétel euróban üzletenként 2025-ben?"
+user: carla
+as_of_date: 2026-10-04
+category: ratio
+traps: [1, 2, 3, 4]
+expected:
+  kind: result
+notes: >
+  Average per store = total net sales / number of stores, with the test store removed from
+  BOTH sides. Counting it in the denominator gives 20 instead of 19 stores and a number
+  that is about 5 percent too low. A ratio of sums, not an average of averages.
+reference_sql: |
+  SELECT SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) / COUNT(DISTINCT f.store_id) AS avg_net_sales_per_store_eur
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+  WHERE NOT f.is_cancelled
+    AND NOT s.is_test_store
+    AND f.sales_date >= DATE '2025-01-01'
+    AND f.sales_date < DATE '2026-01-01'

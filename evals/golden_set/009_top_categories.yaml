@@ -1,7 +1,7 @@
 id: "009"
 questions:
   en: "What are the top 5 product categories by net sales in euro in 2025?"
-  hu: null
+  hu: "Melyik az 5 legnagyobb nettó árbevételű termékkategória euróban 2025-ben (az angol kategórianevekkel)?"
 user: carla
 as_of_date: 2026-10-04
 category: ranking

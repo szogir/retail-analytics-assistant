@@ -1,0 +1,27 @@
+id: "017"
+questions:
+  en: "Which 3 stores had the highest net sales in euro in 2025?"
+  hu: "Melyik 3 üzletnek volt a legmagasabb nettó árbevétele euróban 2025-ben?"
+user: carla
+as_of_date: 2026-10-04
+category: ranking
+traps: [1, 2, 3, 4]
+expected:
+  kind: result
+order_sensitive: true
+notes: >
+  Ranking of stores. The test store has sales too (about 20 thousand lines) and would
+  distort a ranking if it were not excluded. The order is part of the answer.
+reference_sql: |
+  SELECT s.store_name,
+         SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate) AS net_sales_eur
+  FROM fact_sales f
+  JOIN dim_store s ON s.store_id = f.store_id
+  JOIN fx_rate fx ON fx.rate_date = f.sales_date AND fx.currency = f.currency
+  WHERE NOT f.is_cancelled
+    AND NOT s.is_test_store
+    AND f.sales_date >= DATE '2025-01-01'
+    AND f.sales_date < DATE '2026-01-01'
+  GROUP BY s.store_name
+  ORDER BY net_sales_eur DESC
+  LIMIT 3

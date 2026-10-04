@@ -1,7 +1,7 @@
 id: "004"
 questions:
   en: "What was the average basket value in euro per country in 2025?"
-  hu: null
+  hu: "Mekkora volt az átlagos kosárérték euróban országonként 2025-ben?"
 user: carla
 as_of_date: 2026-10-04
 category: ratio

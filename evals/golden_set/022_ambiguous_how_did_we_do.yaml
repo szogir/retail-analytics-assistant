@@ -1,0 +1,14 @@
+id: "022"
+questions:
+  en: "How did we do last quarter?"
+  hu: "Hogyan teljesítettünk a múlt negyedévben?"
+user: carla
+as_of_date: 2026-10-04
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: >
+  Ambiguous on purpose: "how did we do" names no metric (net sales? receipts? margin?) and
+  "last quarter" could be the calendar or the fiscal quarter. The right behaviour is to
+  ask one clarification question instead of guessing.

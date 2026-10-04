@@ -1,7 +1,7 @@
 id: "010"
 questions:
   en: "What was the average daily net sales in euro in Austria in 2025, counting only the days the stores were open?"
-  hu: null
+  hu: "Mekkora volt az átlagos napi nettó árbevétel euróban Ausztriában 2025-ben, csak a nyitvatartási napokat számolva?"
 user: carla
 as_of_date: 2026-10-04
 category: ratio
