@@ -73,8 +73,10 @@ def test_answer_required_and_assumption_text_are_checked_separately() -> None:
 
 
 def test_review_metadata_cannot_claim_approval_without_a_person_and_date() -> None:
+    # Start from a pending case: the frozen suite on disk is already approved, so its
+    # dump would carry a reviewer and date and the claim below would be valid.
     payload = load_golden_set()[0].model_dump()
-    payload.update(reviewed=True)
+    payload.update(reviewed=True, reviewed_on=None, reviewed_by=None)
     with pytest.raises(ValidationError):
         GoldenCase.model_validate(payload)
     payload.update(reviewed_by="Owner", reviewed_on=dt.date(2026, 10, 4))
