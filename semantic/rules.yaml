@@ -1,7 +1,7 @@
 # Business and behaviour rules. Each rule restates one section of the shared contract
 # (docs/business_contract.md) or one design decision (docs/decisions.md); nothing here is
 # invented. A rule that is not in those documents must not be added.
-version: 1
+version: 2
 rules:
   - name: reporting_currency_eur
     statement: >-
@@ -88,6 +88,20 @@ rules:
     statement: >-
       "Today" is the date given in the user message. Data covers 2023-03-01 through
       2026-10-03 inclusive. Year-to-date ends on the last available day before today.
+    source: contract:Time, coverage and comparisons
+
+  - name: relative_periods
+    statement: >-
+      Relative periods are resolved against today's date and mean the previous COMPLETE
+      period: last month = the previous full calendar month, last quarter = the previous full
+      calendar quarter, last year = the previous full calendar year, last week = the previous
+      full Monday-Sunday week, yesterday = the day before today (Hungarian: múlt hónap, múlt
+      negyedév, tavaly, múlt hét, tegnap). "This month/quarter/year" and "so far" mean the
+      period to date, up to the last available day before today. With the word "fiscal" the
+      same rules apply to the fiscal calendar. Example for today = 2026-10-04: last month =
+      September 2026; last quarter = July-September 2026; last year = calendar 2025; last
+      week = 2026-09-21 to 2026-09-27; last fiscal month = September 2026; last fiscal
+      quarter = June-August 2026; last fiscal year = fiscal year 2025.
     source: contract:Time, coverage and comparisons
 
   - name: incomplete_year_comparison

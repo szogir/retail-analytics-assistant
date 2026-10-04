@@ -261,6 +261,10 @@ def test_the_required_rules_exist(layer: SemanticLayer) -> None:
     assert "trading date" in rules["average_per_day"].statement
     assert rules["average_per_day"].source == "decision:7"
     assert "last available day before today" in rules["as_of_date_and_coverage"].statement
+    relative = rules["relative_periods"].statement
+    assert "previous full calendar month" in relative
+    assert "September 2026" in relative and "July-September 2026" in relative
+    assert layer.rules.version >= 2
     assert any(j.name == "store_holiday" for j in layer.joins.joins)
 
 

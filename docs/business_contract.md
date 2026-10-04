@@ -36,6 +36,19 @@ built from this contract and the development suite only.
   including the short final week; they are not ISO weeks.
 - The reproducible evaluation date is 2026-10-04. Data covers 2023-03-01 through
   2026-10-03 inclusive. Year-to-date ends on the last available day before today.
+- Relative periods are resolved against the evaluation date and mean the previous complete
+  period: "last month" is the previous full calendar month, "last quarter" the previous
+  full calendar quarter (January-March, April-June, July-September, October-December),
+  "last year" the previous full calendar year, "last week" the previous full
+  Monday-Sunday week and "yesterday" the day before today. Hungarian equivalents (múlt
+  hónap, múlt negyedév, tavaly, múlt hét, tegnap) mean the same. With the evaluation date:
+  last month is September 2026, last quarter is July-September 2026, last year is
+  calendar 2025, last week is 2026-09-21 to 2026-09-27 and yesterday is 2026-10-03.
+- "This month", "this quarter", "this year" and "so far" mean the period to date, from its
+  first day to the last available day before today.
+- With the word "fiscal" the same rules apply to the fiscal calendar. With the evaluation
+  date: last fiscal month is September 2026 (fiscal month 7), last fiscal quarter is
+  June-August 2026 and last fiscal year is fiscal year 2025 (2025-03-01 to 2026-02-28).
 - For an incomplete current year compared with the preceding year, use matching
   month/day endpoints in both years, with the appropriate calendar/fiscal start.
   State the actual windows. Do not compare a partial year to a full year by default.

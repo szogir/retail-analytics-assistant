@@ -351,3 +351,33 @@ to the grading functions, and the runner tests cover it, so wiring edits stay fr
 comparable with new runs (they were rerun for that reason). A change in `run_evaluation`
 that altered how results are assembled would not be seen by the hash; review such a change
 by hand. A docstring edit inside a scoring function counts as a change (safe side).
+
+
+## Decision 14: contract amendment for relative periods (2026-10-04)
+
+**Context.** The contract defined only year-to-date. "Last month", "last quarter" and
+similar phrases had no documented meaning, so a model could only guess, and the semantic
+layer could not state a rule without inventing one.
+
+**Decision.** The contract's time section now says that a relative period is the previous
+complete period of the named calendar (last month = previous full calendar month, last
+quarter = previous full calendar quarter, last year, last week = Monday-Sunday, yesterday),
+that "this month/quarter/year" and "so far" mean period-to-date, and that the word "fiscal"
+selects the fiscal counterparts. The rule `relative_periods` in `rules.yaml` (version 2)
+repeats it with its source.
+
+**Basis and timing.** The amendment follows ordinary business convention and development
+experience: the development reference of case 002 ("last month", fixed evaluation date
+2026-10-04) already uses 2026-09-01 to 2026-09-30, which matches; cases 018 and 036
+(year-to-date, fiscal year so far) match the period-to-date rule; cases 022 and 049 expect a
+clarification for other reasons (no measure named, no margin data) and are unaffected. It is
+made before any holdout run and without knowledge of any holdout result. The contract is
+in neither `frozen.json` nor `holdout_manifest.json`, so no commitment changes. The
+holdout author already saw the sealed cases, so the amendment is not blind to them.
+
+**Alternatives considered.** Leaving the gap: the model guesses, and the semantic layer
+would not be evidence for the contract. Rolling windows ("last 30 days"): a different and
+less common reading of "last month".
+
+**Consequences.** Development results measured after this amendment are dev-informed,
+like the rest of the layer. Weeks follow Monday-Sunday, not the fiscal week blocks.
