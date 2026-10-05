@@ -416,9 +416,17 @@ show the same values, otherwise the run is not comparable.
 
 **Known limits, deliberately not fixed.** Cases 042 (LAG computed before the WHERE filter)
 and 044 are model limits, not missing definitions: a rule or example for them would be
-tuning to the case. They stay as known failures. Also unresolved: 006, 017, 019, 037, 045
-(0/6 in v3) and the instability of 005, 038, 039, 022. The contract defines only one product
-group (milk); no other product group was added.
+tuning to the case. They stay as known failures. Also unresolved, on the preregistered main
+metric (primary on data cases, strict on the rest; case table in
+`evals/results/2026-10-05-dev-semantic-v3/v2-vs-v3-cases.md`): 038 (2/6), 045 (3/6; the
+Hungarian answer rounds to 2 decimals), 037 and 039 (4/6), 005 and 012 (5/6), and the
+clarification case 022 (3/6). Cases 006, 017 and 019 are 6/6 on the main metric; they looked
+unresolved only on the legacy strict metric, which is not the score of record. The contract
+defines only one product group (milk); no other product group was added.
+
+**Prompt file name.** The prompt file is still called `sql_semantic_v1.md`, but its content
+changed in v3 (SHA-256 `e0457b…` → `e3e91b…`). The SHA-256 is authoritative, not the file
+name.
 
 **Alternatives considered.** Another iteration on the remaining failures: each further fix
 makes the development score less informative about unseen questions. Freezing earlier (after
