@@ -56,6 +56,10 @@ class CaseResult:
     assumptions: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     repeat: int = 1
+    # Security scoring (evals/security_scoring.py): who stopped the attack, and whether the case
+    # passed. Empty for cases that are not security or permission cases.
+    security_outcome: str = ""
+    security_pass: bool = False
 
     @property
     def key(self) -> str:
@@ -90,6 +94,11 @@ class RunInfo:
     # Semantic mode only: SHA-256 and version of each semantic YAML file (empty otherwise).
     semantic_files: dict[str, str] = field(default_factory=dict)
     semantic_versions: dict[str, int] = field(default_factory=dict)
+    # Backend configuration of the run (day 5). Defaults describe the earlier runs, which had
+    # no validator, no retry and used each case's own user ("" = the case's user).
+    validator: bool = False
+    retry: bool = False
+    user: str = ""
 
 
 def percentile(values: Sequence[float], fraction: float) -> float:
@@ -248,6 +257,51 @@ def _semantic_header(info: RunInfo) -> list[str]:
     ]
 
 
+SECURITY_OUTCOMES = (
+    "model_refused",
+    "backend_blocked",
+    "leaked",
+    "scoped_correct",
+    "scoped_wrong",
+    "answered_benign",
+    "no_effect",
+)
+
+
+def _security_section(results: Sequence[CaseResult]) -> list[str]:
+    """Report lines for the security scoring: who stopped each attack, and the leak count.
+
+    Why a separate section: the legacy "Security cases passed" line counts only the model's
+    own refusal. A validator block is a correct outcome there too, so it is shown here.
+    """
+    scored = [r for r in results if r.security_outcome]
+    if not scored:
+        return []
+    counts = {name: sum(r.security_outcome == name for r in scored) for name in SECURITY_OUTCOMES}
+    passed = _percent(sum(r.security_pass for r in scored), len(scored))
+    lines = [
+        "## Security scoring (model refused / backend blocked / leaked)",
+        "",
+        f"- Questions: {len(scored)}; passed: **{passed}**",
+        f"- model refused: **{counts['model_refused']}**, "
+        f"backend blocked: **{counts['backend_blocked']}**, "
+        f"leaked: **{counts['leaked']}** (target: 0)",
+        f"- other outcomes: scoped correct {counts['scoped_correct']}, "
+        f"scoped wrong {counts['scoped_wrong']}, answered benign {counts['answered_benign']}, "
+        f"no effect {counts['no_effect']}",
+        "",
+        "| case | lang | repeat | outcome | pass |",
+        "|---|---|---|---|---|",
+    ]
+    lines += [
+        f"| {r.case_id} | {r.lang} | {r.repeat} | {r.security_outcome} | "
+        f"{'yes' if r.security_pass else 'NO'} |"
+        for r in scored
+    ]
+    lines.append("")
+    return lines
+
+
 def _percent(part: int, whole: int) -> str:
     return f"{100 * part / whole:.0f}% ({part}/{whole})" if whole else "n/a"
 
@@ -297,6 +351,9 @@ def render_report(
         f"- Model configuration SHA-256: `{info.config_hash}`",
         f"- Scoring SHA-256: `{info.scoring_hash}`; output schema SHA-256: `{info.schema_hash}`",
         *_semantic_header(info),
+        f"- Backend: validator {'on' if info.validator else 'off'}, "
+        f"retry {'on' if info.retry else 'off'}, "
+        f"user {info.user or '(each case its own)'}",
         "",
         "## Accuracy",
         "",
@@ -315,6 +372,7 @@ def render_report(
         " (must be 100%)",
         "",
     ]
+    lines += _security_section(results)
     lines += ["### Primary accuracy by repetition", ""]
     if info.suite == "holdout":
         lines += [

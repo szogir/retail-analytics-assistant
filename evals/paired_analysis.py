@@ -14,6 +14,34 @@ import numpy as np
 
 from evals.report import CaseResult
 
+# Run settings that must be identical in every comparison, confirmatory or diagnostic.
+IDENTITY_KEYS = (
+    "suite",
+    "case_hash",
+    "database_hash",
+    "model",
+    "max_tokens",
+    "scoring_version",
+    "repetitions",
+    "config_hash",
+    "scoring_hash",
+    "schema_hash",
+    "data_case_count",
+    "holdout_manifest_hash",
+    "holdout_verified",
+)
+# Backend settings added on day 5, with the value that older run files implicitly had.
+BACKEND_DEFAULTS: dict[str, object] = {"validator": False, "retry": False, "user": ""}
+
+
+def differing_backend_settings(before: dict[str, object], after: dict[str, object]) -> list[str]:
+    """Names of the backend settings (validator, retry, user) that differ between two runs."""
+    return [
+        key
+        for key, default in BACKEND_DEFAULTS.items()
+        if before.get(key, default) != after.get(key, default)
+    ]
+
 
 @dataclass(frozen=True)
 class PairedEstimate:
@@ -101,21 +129,7 @@ def main() -> None:
     args = parser.parse_args()
     before = json.loads(args.before.read_text(encoding="utf-8"))
     after = json.loads(args.after.read_text(encoding="utf-8"))
-    for key in (
-        "suite",
-        "case_hash",
-        "database_hash",
-        "model",
-        "max_tokens",
-        "scoring_version",
-        "repetitions",
-        "config_hash",
-        "scoring_hash",
-        "schema_hash",
-        "data_case_count",
-        "holdout_manifest_hash",
-        "holdout_verified",
-    ):
+    for key in IDENTITY_KEYS:
         if before["info"].get(key) != after["info"].get(key):
             raise ValueError(f"Run configurations differ: {key}")
     # Design note: the confirmatory rules stay exactly as preregistered. The diagnostic path is
@@ -125,6 +139,12 @@ def main() -> None:
     diagnostic = args.diagnostic and before["info"].get("suite") == "development"
     if args.diagnostic and not diagnostic:
         raise ValueError("--diagnostic is only for runs of the development suite")
+    # Backend settings (day 5) may differ only in a diagnostic comparison, for example "semantic
+    # without validator" versus "semantic with validator". Every other identity key above stays
+    # mandatory. Older run files have no such keys; they mean "off / off / each case's user".
+    differing = differing_backend_settings(before["info"], after["info"])
+    if differing and not diagnostic:
+        raise ValueError(f"Run configurations differ: {', '.join(differing)}")
     if not diagnostic:
         if before["info"].get("suite") != "holdout":
             raise ValueError("Confirmatory analysis requires the frozen holdout suite")
@@ -146,13 +166,19 @@ def main() -> None:
     ) and not diagnostic
     estimate = asdict(result)
     label: dict[str, object] = {}
+    if differing:
+        label["backend_settings_differ"] = {
+            key: [
+                before["info"].get(key, BACKEND_DEFAULTS[key]),
+                after["info"].get(key, BACKEND_DEFAULTS[key]),
+            ]
+            for key in differing
+        }
     if diagnostic:
         # The success rule belongs to the holdout; showing it for development data would
         # invite reading a diagnostic number as a claim.
         del estimate["meets_success_rule"]
-        label = {
-            "label": "DIAGNOSTIC (development suite): not confirmatory, no success-rule verdict"
-        }
+        label["label"] = "DIAGNOSTIC (development suite): not confirmatory, no success-rule verdict"
     print(
         json.dumps(
             {"comparison": comparison, "confirmatory": confirmatory, **label, **estimate},

@@ -485,3 +485,71 @@ guarantee accuracy on arbitrary real-world questions.
 exact-byte case archive is published with the final README so the commitment can be
 verified. Pipeline changes (validator, permissions, self-correction) are measured on the
 development and security suites and do not inherit this confirmatory result.
+
+
+## Decision 17: backend security architecture (2026-10-05)
+
+**Context.** Decision 16 showed that refusal in the prompt is not a control: the naive and
+commented modes failed 3 and 6 of 24 security questions on the holdout. The control has to
+hold even when the model writes bad SQL.
+
+**Decision.** Two independent backend layers sit between the model and the data, and neither
+depends on the prompt:
+
+1. **Validator** (`sql/validator.py`, sqlglot, DuckDB dialect). Exactly one statement; the root
+   must be a SELECT or a set operation (WITH is part of a SELECT); every table must be on the
+   allow-list (six tables) or a CTE of the statement itself; no schema or catalog qualification
+   (so no `raw`); table functions only from an allow-list (`range`, `generate_series`,
+   `unnest`); scalar functions are checked against a deny-list and name families (`query`,
+   `query_table`, `getvariable`, `current_setting`, `getenv`, `glob`, `read_*`, `sniff_*`,
+   `duckdb_*`, `pragma_*`, `*_scan`). Unparsable SQL is refused (fail closed) but reported as
+   `sql_error`, not `blocked`. Every violation is reported as rule name + token.
+2. **Per-user connection** (`sql/access.py`, `config/users.yaml`). A new in-memory connection
+   per question: `raw` attached READ_ONLY, the user's stores selected, the filtered data
+   COPIED into temp tables with the original names, then `DETACH raw`, `enable_external_access
+   = false`, a memory limit and `lock_configuration = true`.
+
+**Why copies and DETACH instead of filtered views over an attached `raw`.** With views the
+hidden database stays attached and `raw.main.fact_sales` is reachable by name inside the
+connection, so only the validator would protect it. We measured the strict variant: setup takes
+about 0.1-0.2 s per user on the full database (1.45 M rows), under the 2 s limit set in
+advance, so it is the solution. Tests prove that `raw` is no longer in `duckdb_databases()`,
+that `raw.*` queries fail, and that the settings cannot be changed or re-enabled afterwards
+(on the installed DuckDB 1.5.6). The database file hash is unchanged after setup and use.
+
+**Row limit.** Not enforced by rewriting the query. Wrapping in `SELECT * FROM (...) LIMIT n`
+can lose an inner ORDER BY and does not fit WITH/UNION; the executor's `fetchmany(limit + 1)`
+caps the result and reports truncation without touching the SQL.
+
+**What it protects.** Writes and DDL (not SELECT, and the file is opened read-only anyway);
+file and system access (validator and `enable_external_access = false`); reading the `raw`
+schema (validator, and the schema no longer exists in the connection); reading other regions'
+rows (the connection only holds the user's stores, whatever SQL runs); runaway queries (memory
+limit and the executor timeout). The permission filter scopes rows only; the test-store and
+cancellation rules stay business logic in the SQL.
+
+**What it does NOT protect.**
+- **Prompt extraction.** The validator checks SQL, not prose. A model that repeats its
+  instructions in `approach` or `assumptions` is not stopped. The suite detects it with
+  verbatim sentences of the prompt (documented in `docs/evaluation.md`); the prompt itself
+  contains no secret and is public in the repository.
+- **Column-level or measure-level rules.** The only access rule is the store filter; there
+  are no per-column or per-metric permissions.
+- **Correctness.** A wrong but allowed query still returns a wrong number; that is measured by
+  accuracy, not by security.
+- **Denial of service beyond the limits** (a slow but allowed query is cut by the timeout, not
+  prevented), and anything outside this process (the host, the API key, `users.yaml` itself).
+- The validator's deny-list for scalar functions is a list: a new DuckDB function that reaches
+  the outside would need adding. The second layer (no external access, no `raw`) is why that
+  gap is not a leak.
+
+**Measurement state.** The offline tests cover the layers and a fake model that obeys every
+attack. Live numbers (model refused / backend blocked / leaked per mode, and the accuracy
+regression with the validator on) are recorded after the live runs in a later entry. The
+holdout label `holdout-v1` and Decision 16 are untouched: the new configuration runs only on
+the development and security suites and does not inherit the +74 pp result.
+
+**Alternatives considered.** Filtered views over an attached `raw` (cheaper setup, but `raw` is
+reachable by name, so only the validator would stand between the model and the hidden data).
+A prompt-only rule (rejected by Decision 16). A regex validator or `sqlparse` (cannot tell a
+table from a string literal or a comment).

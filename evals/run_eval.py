@@ -39,6 +39,8 @@ from evals.report import (
     save_baseline,
     today_iso,
 )
+from evals.security_scoring import classify, passed
+from evals.security_suite import SECURITY_SUITE_DIR, SecurityCase, load_security_suite
 from evals.suites import suite_directory
 from retail_assistant.config import Settings
 from retail_assistant.llm.base import LLMClient
@@ -149,6 +151,9 @@ def run_evaluation(
     prompts_dir: Path,
     languages: Sequence[Language],
     semantic_dir: Path | None = None,
+    validate: bool = False,
+    users_path: Path | None = None,
+    user_override: str = "",
 ) -> list[CaseResult]:
     """Ask every question of every case and grade the answers.
 
@@ -161,6 +166,9 @@ def run_evaluation(
         prompts_dir: Folder with the versioned prompt files.
         languages: Which question languages to ask.
         semantic_dir: Folder with the semantic files; needed for the "semantic" mode.
+        validate: Backend protection on (validator + per-user connection), see `pipeline.ask`.
+        users_path: `users.yaml`, needed when `validate` is on.
+        user_override: Ask every question as this user instead of the case's own user.
 
     Returns:
         One graded result per (case, language) that has a question text.
@@ -170,13 +178,16 @@ def run_evaluation(
         reference = execute_query(db_path, case.reference_sql) if case.reference_sql else None
         if reference is not None and reference.truncated:
             raise ValueError(f"Reference result truncated for case {case.id}")
+        forbidden: QueryResult | None = None
+        if isinstance(case, SecurityCase) and case.forbidden_reference_sql:
+            forbidden = execute_query(db_path, case.forbidden_reference_sql)
         for lang in languages:
             question = case.questions.en if lang == "en" else case.questions.hu
             if question is None:
                 continue  # no translation for this case yet
             answer = ask(
                 question,
-                case.user,
+                user_override or case.user,
                 lang,
                 mode,
                 llm=llm,
@@ -185,8 +196,25 @@ def run_evaluation(
                 prompts_dir=prompts_dir,
                 as_of=case.as_of_date,
                 semantic_dir=semantic_dir,
+                validate=validate,
+                users_path=users_path,
             )
             strict, lenient = grade(case, answer, reference)
+            # Security scoring is separate from `grade` (frozen): it also knows the backend's
+            # block, and tells who stopped an attack. Only security and permission cases.
+            security_outcome, security_pass = "", False
+            if case.category in ("security", "permission"):
+                security_outcome = classify(
+                    kind=case.expected.kind,
+                    attack=getattr(case, "attack", ""),
+                    answer=answer,
+                    reference=reference,
+                    forbidden=forbidden,
+                    order_sensitive=case.order_sensitive,
+                )
+                security_pass = passed(
+                    case.expected.kind, security_outcome, getattr(case, "refusal_acceptable", False)
+                )
             results.append(
                 CaseResult(
                     case_id=case.id,
@@ -204,6 +232,8 @@ def run_evaluation(
                     assumptions_ok=assumptions_match(case, answer, lang),
                     assumptions=answer.model_answer.assumptions if answer.model_answer else [],
                     tags=case.tags,
+                    security_outcome=security_outcome,
+                    security_pass=security_pass,
                 )
             )
     return results
@@ -218,7 +248,17 @@ def main(
         bool, typer.Option("--save-baseline", help="store a baseline inside the selected suite")
     ] = False,
     limit: Annotated[int, typer.Option(min=0, help="only the first N cases (0 = all)")] = 0,
-    suite: Annotated[str, typer.Option(help="development or holdout")] = "development",
+    suite: Annotated[str, typer.Option(help="development, security or holdout")] = "development",
+    validator: Annotated[
+        bool,
+        typer.Option(
+            "--validator/--no-validator",
+            help="backend protection: SQL validator + per-user filtered connection",
+        ),
+    ] = False,
+    user: Annotated[
+        str, typer.Option(help="ask every question as this user (default: the case's user)")
+    ] = "",
     repetitions: Annotated[int, typer.Option(min=1, max=3)] = 1,
     compare_to: Annotated[
         Path | None,
@@ -240,18 +280,27 @@ def main(
     run_mode = modes[mode]
     languages = language_choices[lang]
 
-    if suite not in ("development", "holdout"):
-        raise typer.BadParameter("suite must be development or holdout")
-    try:
-        directory = suite_directory(suite, holdout_dir)
-    except (ValueError, FileNotFoundError) as exc:
-        raise typer.BadParameter(str(exc)) from exc
-    cases = load_golden_set(directory)
+    if suite not in ("development", "security", "holdout"):
+        raise typer.BadParameter("suite must be development, security or holdout")
+    if suite == "holdout" and (validator or user):
+        raise typer.BadParameter("the holdout is spent; it is not run with new options")
+    if suite == "security" and not validator:
+        raise typer.BadParameter("the security suite needs --validator (restricted users)")
+    cases: Sequence[GoldenCase]
+    if suite == "security":
+        directory = SECURITY_SUITE_DIR
+        cases = load_security_suite(directory)
+    else:
+        try:
+            directory = suite_directory(suite, holdout_dir)
+        except (ValueError, FileNotFoundError) as exc:
+            raise typer.BadParameter(str(exc)) from exc
+        cases = load_golden_set(directory)
     settings = Settings()
     manifest_hash = ""
     if suite == "holdout":
         manifest_hash = verify_commitment(directory, settings.db_path)
-    else:
+    elif suite == "development":
         require_frozen(directory, cases, settings.db_path)
     if suite == "holdout" and (limit or lang != "both" or repetitions != 3):
         raise typer.BadParameter(
@@ -259,7 +308,7 @@ def main(
         )
     setup = create_llm(settings, profile or None)
     if limit:
-        cases = cases[:limit]
+        cases = list(cases)[:limit]
     prompts_dir = settings.config_dir / "prompts"
     # Only the semantic mode reads the semantic files; the other modes must not be affected
     # by them, so their run info carries no semantic fingerprint.
@@ -291,7 +340,11 @@ def main(
         data_case_count=sum(c.expected.kind in ("result", "result_scoped") for c in cases),
         semantic_files=layer.file_hashes if layer else {},
         semantic_versions=layer.file_versions if layer else {},
+        validator=validator,
+        retry=False,
+        user=user,
     )
+    users_path = settings.config_dir / "users.yaml"
     output_dir = directory / "artifacts"
     output_dir.mkdir(parents=True, exist_ok=True)
     baseline_path = output_dir / f"{setup.profile.name}_baseline.json"
@@ -318,13 +371,17 @@ def main(
             prompts_dir=prompts_dir,
             languages=languages,
             semantic_dir=semantic_dir,
+            validate=validator,
+            users_path=users_path,
+            user_override=user,
         )
         results.extend(replace(result, repeat=repeat) for result in batch)
     report_path = output_dir / "latest.md"
 
     # The full per-question dump (SQL, messages) is for debugging and is not versioned.
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-    dump = output_dir / f"{stamp}_{mode}_{info.profile}.json"
+    tag = "_validated" if validator else ""
+    dump = output_dir / f"{stamp}_{mode}_{info.profile}{tag}.json"
     # Do not label a run verified if sealed files changed while it ran.
     if suite == "holdout" and verify_commitment(directory, settings.db_path) != manifest_hash:
         raise ValueError("Holdout manifest changed during evaluation")

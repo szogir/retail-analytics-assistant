@@ -173,6 +173,6 @@ def test_llm_failures_become_statuses(tiny_db: Path) -> None:
     assert run(FakeLLMClient(responses=[LLMProviderError("down")]), tiny_db).status == "llm_error"
 
 
-def test_other_users_are_rejected_until_day_5(tiny_db: Path) -> None:
+def test_other_users_need_the_validated_path(tiny_db: Path) -> None:
     with pytest.raises(ValueError, match="not supported"):
         run(FakeLLMClient(responses=[answer()]), tiny_db, user="anna")
