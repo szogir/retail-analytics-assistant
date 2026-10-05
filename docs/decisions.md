@@ -381,3 +381,50 @@ less common reading of "last month".
 
 **Consequences.** Development results measured after this amendment are dev-informed,
 like the rest of the layer. Weeks follow Monday-Sunday, not the fiscal week blocks.
+
+
+## Decision 15: pre-holdout freeze (2026-10-05)
+
+**Context.** The semantic layer went through three development iterations (v1-v3). Every
+iteration was informed by the development suite, so its results are dev-informed. The
+held-out suite is the only confirmatory evidence, and it is only meaningful if nothing
+changes after this point.
+
+**Decision.** From this commit on there is no more tuning of the prompt, the semantic files,
+the model configuration or the scoring. The frozen state is:
+
+| item | SHA-256 |
+|---|---|
+| prompt `config/prompts/sql_semantic_v1.md` | `e3e91b83212118e600cd8b2bf8a754166eeb5c27ff574c8317c12acbbaa6cc25` |
+| `semantic/metrics.yaml` (v1) | `b4eda0773a24567a88b200c3822d17d160ba012e935f97362e71c26d8b4dd566` |
+| `semantic/rules.yaml` (v3) | `5b17a79351d2d18302ed1ede17eb8ceda7d7144cf1e39153e726ab64978fe5df` |
+| `semantic/joins.yaml` (v1) | `7e98e881014ca71cf87b1989eaf280e7daaeffc0ed1236975acbc18a0042b472` |
+| `semantic/examples.yaml` (v1) | `6c5b110f4cff8e44fe2a55265532d91688ffb74baa68b512c178b66e8ab1bd61` |
+| model configuration `config/models.yaml` | `17c53d78e08cbd10769139e5f329ed66827358a749a054747cd4063fd0c34b46` |
+| scoring (grading logic fingerprint, Decision 13) | `1056bb8f5c5fd44683dddbb78260560811c205ce3202117e20d70db4c8d69349` |
+| database `data/retail.duckdb` | `741bd4c18d8f81433565e2cd96edfe5751283f914753583fdbb82a91188df965` |
+| development case set | `c8a7d537145a97b1795e61f49cc097f03e5e92e4b01884bdc36d58e11f0849fd` |
+
+Frozen code commit: `321a985` (rules v3). The commit that records this decision changes
+documentation only.
+
+Confirmatory configuration: the current pipeline, **self-correction retry off** (not
+implemented yet), profile `claude_small`, mode `semantic`, 3 repetitions, one question per
+case and language. The hashes above are the ones printed in the v3 run report
+(`evals/results/2026-10-05-dev-semantic-v3/semantic-report.md`); the holdout report must
+show the same values, otherwise the run is not comparable.
+
+**Known limits, deliberately not fixed.** Cases 042 (LAG computed before the WHERE filter)
+and 044 are model limits, not missing definitions: a rule or example for them would be
+tuning to the case. They stay as known failures. Also unresolved: 006, 017, 019, 037, 045
+(0/6 in v3) and the instability of 005, 038, 039, 022. The contract defines only one product
+group (milk); no other product group was added.
+
+**Alternatives considered.** Another iteration on the remaining failures: each further fix
+makes the development score less informative about unseen questions. Freezing earlier (after
+v2): the v3 changes are general rules traceable to the contract (a wrong "both labels"
+reading, the cancellation base, master-data scope), so they were worth one more round.
+
+**Consequences.** The holdout run is started by the owner in a separate window, not by the
+development session. Its result is reported as measured, whatever it is, and is never used
+to tune anything.
