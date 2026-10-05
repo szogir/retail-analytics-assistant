@@ -264,8 +264,36 @@ def test_the_required_rules_exist(layer: SemanticLayer) -> None:
     relative = rules["relative_periods"].statement
     assert "previous full calendar month" in relative
     assert "September 2026" in relative and "July-September 2026" in relative
-    assert layer.rules.version >= 2
+    assert layer.rules.version >= 3
     assert any(j.name == "store_holiday" for j in layer.joins.joins)
+
+
+def test_cancellation_subject_keeps_returns_and_test_stores_out(layer: SemanticLayer) -> None:
+    rule = {r.name: r for r in layer.rules.rules}["cancellation_as_subject"].statement
+    assert "NOT f.is_return" in rule and "test stores" in rule
+
+
+def test_milk_means_both_brand_labels_and_not_a_language_label(layer: SemanticLayer) -> None:
+    rule = {r.name: r for r in layer.rules.rules}["product_selection"]
+    assert "House Label" in rule.statement
+    assert "name_en LIKE 'Whole milk 1 l (%'" in rule.statement
+    assert "language label" not in rule.statement
+    assert rule.source == "contract:Measures + schema:dim_product.name_en"
+
+
+def test_milk_patterns_select_exactly_the_four_milk_products(
+    db: duckdb.DuckDBPyConnection,
+) -> None:
+    names = db.execute(
+        "SELECT name_en FROM dim_product WHERE name_en LIKE 'Whole milk 1 l (%' "
+        "OR name_en LIKE 'Semi-skimmed milk 1 l (%'"
+    ).fetchall()
+    assert len(names) == 4
+
+
+def test_master_data_questions_are_metric_queries(layer: SemanticLayer) -> None:
+    rule = {r.name: r for r in layer.rules.rules}["master_data_questions"].statement
+    assert "metric_query" in rule and "NOT is_test_store" in rule
 
 
 # --- everything that is SQL actually runs -------------------------------------------------

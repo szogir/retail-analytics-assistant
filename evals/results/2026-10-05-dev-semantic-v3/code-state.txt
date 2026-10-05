@@ -1,0 +1,7 @@
+629e94b44bf86acde71d0fdc9cbcf5d9dfe56d6c
+ config/prompts/sql_semantic_v1.md       |  3 ++-
+ semantic/rules.yaml                     | 28 +++++++++++++++++++++-------
+ src/retail_assistant/semantic/loader.py | 16 +++++++++-------
+ src/retail_assistant/semantic/models.py | 14 +++++++++-----
+ tests/test_semantic_layer.py            | 30 +++++++++++++++++++++++++++++-
+ 5 files changed, 70 insertions(+), 21 deletions(-)

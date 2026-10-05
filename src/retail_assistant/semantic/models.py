@@ -23,10 +23,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 #   contract:<section heading of docs/business_contract.md>   e.g. "contract:Measures"
 #   decision:<number in docs/decisions.md>                     e.g. "decision:7"
 #   schema:<table>.<column>                                    e.g. "schema:dim_store.store_id"
+# Several pointers can be joined with " + " (a comma is not usable: section headings contain
+# commas), e.g. "contract:Measures + schema:dim_product.name_en".
 # The schema form is for facts that are not business rules but properties of the data model,
 # such as a join key. Whether the target really exists is checked by
 # `loader.check_sources`, because that needs the documents and the database; this pattern
 # only checks the spelling.
+SOURCE_SEPARATOR = " + "
 _SOURCE_PATTERN = re.compile(r"^(contract:\S.*|decision:\d+|schema:[a-z_]+\.[a-z_]+)$")
 
 
@@ -48,11 +51,12 @@ class Sourced(_Strict):
     @field_validator("source")
     @classmethod
     def _source_spelling(cls, value: str) -> str:
-        if not _SOURCE_PATTERN.match(value):
-            raise ValueError(
-                f"source must look like 'contract:<section>', 'decision:<n>' or "
-                f"'schema:<table>.<column>': {value!r}"
-            )
+        for part in value.split(SOURCE_SEPARATOR):
+            if not _SOURCE_PATTERN.match(part):
+                raise ValueError(
+                    f"source must look like 'contract:<section>', 'decision:<n>' or "
+                    f"'schema:<table>.<column>' (joined with ' + '): {value!r}"
+                )
         return value
 
 

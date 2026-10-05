@@ -1,7 +1,7 @@
 # Business and behaviour rules. Each rule restates one section of the shared contract
 # (docs/business_contract.md) or one design decision (docs/decisions.md); nothing here is
 # invented. A rule that is not in those documents must not be added.
-version: 2
+version: 3
 rules:
   - name: reporting_currency_eur
     statement: >-
@@ -40,7 +40,10 @@ rules:
   - name: cancellation_as_subject
     statement: >-
       When cancellation itself is the subject of the question (for example the share of
-      cancelled receipts), include cancelled receipts in the specified base.
+      cancelled receipts), include cancelled receipts in the specified base. The base still
+      excludes return receipts (NOT f.is_return) and test stores: cancelled receipts are
+      added to the base, nothing else is relaxed. Numerator and denominator use the same
+      base (all non-return receipts of the period, cancelled ones included).
     source: contract:Measures
 
   - name: sales_receipt_measures
@@ -69,11 +72,22 @@ rules:
 
   - name: product_selection
     statement: >-
-      "Milk" means whole and semi-skimmed 1 l milk, in both language labels; it is not every
-      Dairy item and not sour cream. Hungarian inflection and the English and Hungarian
-      names refer to the same products. Do not use an unrestricted substring for a word
-      whose substring also names a different product.
-    source: contract:Measures
+      "Milk" means exactly four products of dim_product: whole milk 1 l and semi-skimmed
+      milk 1 l, each in both labels, the branded one and the private-label one (House
+      Label). Select them with p.name_en LIKE 'Whole milk 1 l (%' OR p.name_en LIKE
+      'Semi-skimmed milk 1 l (%'. Hungarian inflection (tej, tejet, tejből) and the English
+      and Hungarian names refer to the same products. It is not every Dairy item and not sour
+      cream; do not use an unrestricted substring such as LIKE '%milk%', which also matches
+      milk chocolate.
+    source: contract:Measures + schema:dim_product.name_en
+
+  - name: master_data_questions
+    statement: >-
+      A question about master data that the dimension tables answer (stores, products,
+      calendar, public holidays: dim_store, dim_product, dim_date, dim_holiday) is an
+      ordinary metric_query, not out_of_scope; no fact table is needed. Test stores are still
+      excluded, also from a count of stores (NOT is_test_store).
+    source: contract:Evaluation boundaries
 
   - name: calendar_vs_fiscal
     statement: >-

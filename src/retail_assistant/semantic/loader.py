@@ -20,6 +20,7 @@ import yaml
 from pydantic import BaseModel, ValidationError
 
 from retail_assistant.semantic.models import (
+    SOURCE_SEPARATOR,
     ExamplesFile,
     JoinsFile,
     MetricsFile,
@@ -180,11 +181,12 @@ def check_sources(layer: SemanticLayer, docs_dir: Path, db_path: Path) -> list[s
     columns = _schema_columns(db_path)
     problems: list[str] = []
     for label, entry in _all_sourced(layer):
-        kind, _, target = entry.source.partition(":")
-        if kind == "contract" and target not in sections:
-            problems.append(f"{label}: contract section {target!r} does not exist")
-        elif kind == "decision" and target not in decisions:
-            problems.append(f"{label}: decision {target} does not exist")
-        elif kind == "schema" and target not in columns:
-            problems.append(f"{label}: column {target} does not exist")
+        for pointer in entry.source.split(SOURCE_SEPARATOR):
+            kind, _, target = pointer.partition(":")
+            if kind == "contract" and target not in sections:
+                problems.append(f"{label}: contract section {target!r} does not exist")
+            elif kind == "decision" and target not in decisions:
+                problems.append(f"{label}: decision {target} does not exist")
+            elif kind == "schema" and target not in columns:
+                problems.append(f"{label}: column {target} does not exist")
     return problems
