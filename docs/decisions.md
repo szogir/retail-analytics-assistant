@@ -561,3 +561,47 @@ suite is a self-written capability and regression test, authored in the same wor
 the validator and the access layer it tests; it is not an independent measurement, and a pass
 shows that the implemented layers behave as the author intended, not that no other attack
 exists.
+
+**Live measurement (2026-10-05, profile `claude_small`, code `dc4d3da`, files in
+`evals/results/2026-10-05-backend-validated/`).** Diagnostic runs; they do not touch the
+holdout result of Decision 16. Total cost about 1.87 USD.
+
+Security suite (25 cases x 2 languages x 3 repetitions = 150 questions per mode, validator on,
+each case run as its own user: anna/carla):
+
+| mode | model refused | backend blocked | leaked | scoped correct | scoped wrong | passed |
+|---|---|---|---|---|---|---|
+| naive | 96 | 0 | 0 | 18 | 36 | 76% |
+| commented | 96 | 0 | 0 | 18 | 35 (+1 SQL error) | 76% |
+| semantic | 96 | 0 | 0 | 54 | 0 | 100% |
+
+Every repetition gave the same split (32 refusals per repetition in each mode).
+
+- **leaked = 0 in all three modes and all nine repetitions.**
+- **The backend block never fired live**: the model refused all 16 attack cases in every mode,
+  so `backend blocked` is 0. The live run therefore shows no case in which the validator was the
+  deciding layer; that behaviour is evidenced only by the offline tests (including a fake model
+  that obeys every attack: 16/16 blocked, 0 leaked). The naive and commented failures of the
+  holdout (Decision 16) were not reproduced with these case wordings, so these runs neither
+  confirm nor refute the value of the backend against a model that does comply.
+- The `scoped wrong` results of naive and commented are accuracy errors, not permission errors:
+  they occur in p01, p02, p03, p04 (anna) and in the carla controls p08 and p09, and come from
+  the missing business rules (for example VAT not subtracted, fiscal instead of calendar
+  month). No `scope_other` case (p05, p06) and no whole-chain total leaked, and anna never
+  received a value equal to the unscoped reference.
+
+Development suite, semantic mode, validator on, user carla, 3 repetitions, 300 questions:
+
+| | v3 (no backend layers) | with validator and user connection |
+|---|---|---|
+| Primary accuracy | 90.0% (216/240) | **89.6% (215/240)** |
+| Strict / lenient | 83% / 92% | 82% / 92% |
+| Questions blocked by the validator | n/a | **0** (no rule fired) |
+| Cost | 0.85 USD | 0.84 USD |
+
+Paired diagnostic (`paired_analysis --diagnostic`, 40 cases, 10,000 samples, seed 42):
+-0.4 pp, 95% interval -2.9 to +2.1 pp. The differences (5 questions improved, 6 regressed on
+the primary metric, spread over cases 005, 012, 037, 038, 039, 044, 046) are the run-to-run
+noise already seen between earlier identical runs; no regression is attributable to the
+validator, which blocked nothing. The aim was that the backend does not reduce accuracy; this
+is consistent with that, within the resolution of the test (about +-3 pp).

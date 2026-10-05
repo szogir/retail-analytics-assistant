@@ -1,0 +1,21 @@
+{
+  "comparison": "semantic minus semantic",
+  "confirmatory": false,
+  "backend_settings_differ": {
+    "validator": [
+      false,
+      true
+    ],
+    "user": [
+      "",
+      "carla"
+    ]
+  },
+  "label": "DIAGNOSTIC (development suite): not confirmatory, no success-rule verdict",
+  "cases": 40,
+  "difference": -0.004166666666666666,
+  "lower": -0.029166666666666664,
+  "upper": 0.020833333333333332,
+  "bootstrap_samples": 10000,
+  "seed": 42
+}
