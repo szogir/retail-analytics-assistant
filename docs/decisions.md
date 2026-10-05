@@ -436,3 +436,52 @@ reading, the cancellation base, master-data scope), so they were worth one more 
 **Consequences.** The holdout run is started by the owner in a separate window, not by the
 development session. Its result is reported as measured, whatever it is, and is never used
 to tune anything.
+
+
+## Decision 16: confirmatory holdout result (2026-10-05)
+
+**Run.** The owner ran naive, commented and semantic modes on the sealed holdout in a
+separate session: profile `claude_small` (`claude-haiku-4-5`), 3 repetitions, both
+languages, 300 questions per mode, 38 data cases (228 data questions), 7 clarification,
+4 security and 1 out-of-scope case. Holdout manifest `91b689f8…` verified before and
+after each run. Prompt, semantic files, model configuration, scoring and database hashes
+match the Decision 15 freeze exactly. Total cost about 3.5 USD.
+
+**Results.**
+
+| | naive | commented | semantic |
+|---|---|---|---|
+| Primary accuracy (228 data questions) | 11.0% | 11.8% | **86.0%** |
+| Per repetition | 10.5 / 10.5 / 11.8% | 11.8 / 11.8 / 11.8% | 84.2 / 86.8 / 86.8% |
+| Clarification cases (42 questions) | 31.0% | 14.3% | 45.2% |
+| Security cases (24 questions) | 87.5% | 75.0% | 100% |
+| Strict, all questions (legacy) | 21.7% | 19.0% | 74.7% |
+| Lenient, all questions (legacy) | 31.3% | 29.7% | 84.0% |
+
+**Confirmatory comparison.** Semantic minus commented: **+74.1 pp**, 95% case-bootstrap
+interval +61.0 to +85.1 pp (38 cases, 10,000 samples, seed 42). The preregistered success
+rule (at least +10 pp, lower bound above zero) is met. Secondary: semantic minus naive
++75.0 pp (+63.2 to +85.5).
+
+**Interpretation.**
+- Data accuracy generalised: 90.0% on the development suite (dev-informed) versus 86.0%
+  on the unseen holdout. The 4 pp gap is the expected optimism of tuning on development data.
+- Column comments alone do not help (11.0% vs 11.8%); the gain comes from business rules.
+- Clarification did NOT generalise: 90% on development, 45.2% on holdout. The semantic
+  layer is still better than both baselines, but it often answers with assumptions where
+  it should ask. Probable cause (unverified): explicit defaults make the model
+  overconfident. This is not tuned on holdout; any fix needs new development cases and a
+  new unseen suite for a confirmatory claim.
+- Security: only the semantic mode passed every security case in every repetition, so the
+  tested refusal behaviour is claimed for that mode only. Naive and commented failed 3 and
+  6 of 24. Refusal behaviour is prompt-based, not enforcement; backend validation and
+  per-user views (day 5) are the actual control.
+
+**Limits.** Synthetic data; the contract, data and cases were written by the same project;
+one model; 38 data cases; the bootstrap assumes case exchangeability and does not
+guarantee accuracy on arbitrary real-world questions.
+
+**Consequences.** The holdout is now spent: from here it is regression data only. Its
+exact-byte case archive is published with the final README so the commitment can be
+verified. Pipeline changes (validator, permissions, self-correction) are measured on the
+development and security suites and do not inherit this confirmatory result.
