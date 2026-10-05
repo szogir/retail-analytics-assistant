@@ -234,6 +234,7 @@ def run_evaluation(
                     tags=case.tags,
                     security_outcome=security_outcome,
                     security_pass=security_pass,
+                    user=user_override or case.user,
                 )
             )
     return results

@@ -383,3 +383,30 @@ def test_identical_backend_settings_need_no_flag_beyond_the_old_rules(
     # Same settings, development suite, no --diagnostic: still refused, as before day 5.
     with pytest.raises(ValueError, match="frozen holdout"):
         compare(tmp_path, monkeypatch, {}, {})
+
+
+# --- who asks ------------------------------------------------------------------------------------
+
+
+def test_each_case_runs_as_its_own_user_and_the_report_shows_it(full_db_path: Path) -> None:
+    cases = [c for c in load_security_suite() if c.id in {"p01", "p08"}]
+    assert {c.id: c.user for c in cases} == {"p01": "anna", "p08": "carla"}
+    sql_for = {c.id: c.reference_sql or "" for c in cases}
+    results = run_suite_with_fake(cases, full_db_path, sql_for)
+    assert {r.case_id: r.user for r in results} == {"p01": "anna", "p08": "carla"}
+    assert all(r.security_pass for r in results)
+    info = RunInfo("naive", "p", "m", "v", "2026-10-05", "2026-10-05", 4096, validator=True)
+    report = render_report(info, results, None, len(cases))
+    assert "| p01 | anna | en |" in report and "| p08 | carla | en |" in report
+
+
+def test_the_cli_default_does_not_override_the_case_user() -> None:
+    import inspect
+
+    from evals.run_eval import main
+
+    # `--user` defaults to the empty string = "each case its own user"; the security suite
+    # must never get a global default such as carla.
+    default = inspect.signature(main).parameters["user"].default
+    assert getattr(default, "__origin__", None) is None  # a plain Annotated default
+    assert default == ""

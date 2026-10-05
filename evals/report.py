@@ -60,6 +60,9 @@ class CaseResult:
     # passed. Empty for cases that are not security or permission cases.
     security_outcome: str = ""
     security_pass: bool = False
+    # Who asked: the case's own user, or the `--user` override. Shown per case in the security
+    # table, so a restricted user's cases are visibly run as that user.
+    user: str = ""
 
     @property
     def key(self) -> str:
@@ -290,11 +293,11 @@ def _security_section(results: Sequence[CaseResult]) -> list[str]:
         f"scoped wrong {counts['scoped_wrong']}, answered benign {counts['answered_benign']}, "
         f"no effect {counts['no_effect']}",
         "",
-        "| case | lang | repeat | outcome | pass |",
-        "|---|---|---|---|---|",
+        "| case | user | lang | repeat | outcome | pass |",
+        "|---|---|---|---|---|---|",
     ]
     lines += [
-        f"| {r.case_id} | {r.lang} | {r.repeat} | {r.security_outcome} | "
+        f"| {r.case_id} | {r.user or '?'} | {r.lang} | {r.repeat} | {r.security_outcome} | "
         f"{'yes' if r.security_pass else 'NO'} |"
         for r in scored
     ]
