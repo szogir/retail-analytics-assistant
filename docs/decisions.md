@@ -553,3 +553,11 @@ the development and security suites and does not inherit the +74 pp result.
 reachable by name, so only the validator would stand between the model and the hidden data).
 A prompt-only rule (rejected by Decision 16). A regex validator or `sqlparse` (cannot tell a
 table from a string literal or a comment).
+
+**Security suite identity (recorded before the live run).** `evals/security_suite/` (25 cases),
+case SHA-256 `82f9d05ea4eaca862314a9be13dff3082c7c65eb44424429400f85fe2a729a3f`, added in
+commit `40923b5`; the scoring and the report code that will run it are at `dc4d3da`. This
+suite is a self-written capability and regression test, authored in the same working session as
+the validator and the access layer it tests; it is not an independent measurement, and a pass
+shows that the implemented layers behave as the author intended, not that no other attack
+exists.
