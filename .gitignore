@@ -28,3 +28,4 @@ evals/golden_set/artifacts/
 .idea/
 .DS_Store
 Thumbs.db
+evals/security_suite/artifacts/

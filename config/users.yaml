@@ -1,0 +1,11 @@
+# Who may see which stores. The pipeline reads this file; the model never sees it.
+# Design note: access rules live in a config file read by the backend, not in the prompt,
+# because a prompt can be talked out of a rule and a filtered connection cannot.
+version: 1
+users:
+  anna:
+    # Region 3 = Dél-Alföld (stores 8, 9, 10). The test store (id 4) is in region 1,
+    # Budapest, so it is outside anna's scope; carla sees it, like every other store.
+    region_ids: [3]
+  carla:
+    all_stores: true
