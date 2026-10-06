@@ -723,3 +723,12 @@ model call.
   faithful beyond its digits.
 - **`eval`** calls `evals.run_eval.main`; only the development and security suites are
   reachable from the CLI, the holdout and its folder option are not.
+
+## Decision 20: model comparison, claude_small vs claude_mid (2026-10-06)
+
+Diagnostic and dev-informed, not confirmatory. Development suite, semantic v3, validator on, user
+carla, 3 repetitions, same thinking-off setting (Decision 18). Primary accuracy 89.6% (Haiku 4.5)
+vs 97.5% (Sonnet 5.5); p50/p95 latency 4.6 / 7.3 s vs 4.9 / 8.3 s; cost per question $0.0028 vs
+$0.0078 (about 2.8x; the whole run $0.84 vs $2.35); clarification rate 9.0% vs 8.0%; security 100%
+in both. Details and caveats: `evals/results/2026-10-06-model-comparison/comparison.md`. No paired
+analysis (the tool requires identical model and configuration; it was not loosened).
