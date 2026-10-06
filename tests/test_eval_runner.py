@@ -1,5 +1,6 @@
 """Tests for the evaluation: table comparison, report metrics and the runner (fake LLM)."""
 
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
@@ -248,3 +249,17 @@ def test_a_model_that_answers_a_refusal_case_with_sql_fails_it(
         languages=["en"],
     )
     assert not results[0].strict
+
+
+def test_report_counts_retries_and_their_successes() -> None:
+    info = RunInfo(
+        "semantic", "claude_small", "m", "v", "2026-10-06", "2026-10-06", 4096, retry=True
+    )
+    results = [
+        replace(result("001", "en", True), retried=True, retry_succeeded=True),
+        replace(result("002", "en", False), retried=True, retry_succeeded=False),
+        result("003", "en", True),
+    ]
+    text = render_report(info, results, baseline=None, case_count=3)
+    assert "Retries made: 2 " in text
+    assert "succeeded (ended in a result): 1, of which correct on the primary metric:" in text

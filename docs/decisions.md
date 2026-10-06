@@ -619,3 +619,32 @@ demonstrated only by offline adversarial tests with a fully compliant fake model
 defence in depth against a threat not observed live in this evaluation. Decision 16's sentence
 that backend validation is "the actual control" is narrowed accordingly: it controls unsafe SQL
 and cross-region data access; it does not fix wrong refusal behaviour.
+
+### Self-correction retry (2026-10-06)
+
+`ask(..., retry=True)` / `--retry` (default off, development suite only). After a `sql_error` or
+`blocked` result the model is called exactly once more with its failed SQL and the error text (no
+data rows). The retried SQL takes the same path as the first one (validator, the user's filtered
+connection, executor), so a retry is not a way around any backend layer. Clarifications,
+refusals and invalid output are never retried. Cost and latency of both calls are added up; the
+report states how many retries were made and how many ended in a result table. The alternative,
+several retries, was rejected: it hides how often the first answer was wrong and leaves cost
+unbounded.
+
+Offline tests (fake model): wrong first SQL, correct second -> answered; second SQL also
+forbidden -> blocked, no result returned (leaked 0), exactly two model calls.
+
+**The security suite is not re-run with retry.** In the live security runs the validator never
+blocked anything (`backend blocked` = 0 in all modes and repetitions), so a retry after a block
+had nothing to act on; a live run would measure nothing the offline tests do not show. The CLI
+refuses `--retry` on the security suite and on the holdout.
+
+**What the retry can and cannot do.** It corrects syntax and execution errors (a wrong column
+name, an unparsable statement) and validator blocks; it does not correct business logic, because
+a wrong-but-running statement is never retried. In semantic mode there was nothing for it to
+correct live: the validated development run (3 repetitions, 300 questions) had 0 `sql_error` and
+0 `blocked` results, so a semantic retry run would measure nothing. The live measurement of the
+mechanism therefore uses `commented` mode (`--retry`, validator on, user carla, 3 repetitions):
+it reports how many first attempts ended in `sql_error` or `blocked`, how many retries ran, how
+many of those ended in a result, and how many of those are correct on the primary metric. It is
+not an accuracy comparison and has no paired analysis.

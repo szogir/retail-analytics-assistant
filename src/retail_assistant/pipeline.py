@@ -13,15 +13,15 @@ Where it sits in the pipeline: it IS the pipeline.
 """
 
 import datetime as dt
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Literal
 
-from retail_assistant.llm.base import LLMClient, LLMError, LLMOutputError, Usage
+from retail_assistant.llm.base import LLMClient, LLMError, LLMOutputError, LLMResult, Usage
 from retail_assistant.llm.profiles import ModelProfile
 from retail_assistant.llm.schemas import SqlAnswer
 from retail_assistant.semantic.context import Mode, build_system_prompt, prompt_version
-from retail_assistant.sql.access import AccessError, load_users, open_user_connection
+from retail_assistant.sql.access import AccessError, UserAccess, load_users, open_user_connection
 from retail_assistant.sql.executor import (
     QueryResult,
     SqlExecutionError,
@@ -41,6 +41,9 @@ MAX_OUTPUT_TOKENS = 4096
 # defaults of `execute_query`).
 ROW_LIMIT = 1000
 TIMEOUT_SECONDS = 30.0
+
+# Statuses after which the single retry may happen (see `ask`).
+RETRYABLE: tuple[str, ...] = ("sql_error", "blocked")
 
 # What happened to the question. The eval runner grades these outcomes:
 #   answered       a result table was produced
@@ -72,6 +75,8 @@ class Answer:
         cost_usd: Price of the model call.
         prompt_version: Which prompt file was used.
         blocked_rules: Rule names that made the validator refuse the SQL (status "blocked").
+        retried: True if a second model call was made after a "sql_error" or "blocked" result.
+        retry_succeeded: True if that retry ended in status "answered".
     """
 
     status: Status
@@ -85,6 +90,8 @@ class Answer:
     cost_usd: float = 0.0
     prompt_version: str = ""
     blocked_rules: tuple[str, ...] = field(default_factory=tuple)
+    retried: bool = False
+    retry_succeeded: bool = False
 
 
 def build_user_prompt(question: str, lang: Language, as_of: dt.date) -> str:
@@ -110,6 +117,7 @@ def ask(
     semantic_dir: Path | None = None,
     validate: bool = False,
     users_path: Path | None = None,
+    retry: bool = False,
 ) -> Answer:
     """Answer one question.
 
@@ -128,6 +136,9 @@ def ask(
         validate: True = backend protection on: validator, then execution on the user's own
             filtered connection. False = the original path, kept for reproducible measurements.
         users_path: `users.yaml`; required when `validate` is True.
+        retry: True = after a "sql_error" or "blocked" result, ask the model once more with
+            the error text. Needs `validate=True`. Default False, so earlier runs stay
+            reproducible.
 
     Why `validate` defaults to False: the eval runner and the existing measurements were made
     without the backend layers, and a silent default change would make runs incomparable. The
@@ -139,10 +150,15 @@ def ask(
         eval must count them instead of crashing.
 
     Raises:
-        ValueError: If the user is unknown, or `validate` is set without `users_path`.
+        ValueError: If the user is unknown, `validate` is set without `users_path`, or
+            `retry` is set without `validate`.
     """
     # Why refuse instead of ignoring: silently giving another user the full data would be a
     # permission bug. Only the validated path knows per-user access.
+    if retry and not validate:
+        # Why: a retried statement must pass the validator and the user's connection again;
+        # the legacy path has neither, so a retry there would be an unprotected second chance.
+        raise ValueError("retry=True needs validate=True")
     access = None
     if validate:
         if users_path is None:
@@ -156,10 +172,11 @@ def ask(
     version = prompt_version(mode)
     system = build_system_prompt(mode, db_path, prompts_dir, semantic_dir)
 
+    user_prompt = build_user_prompt(question, lang, as_of)
     try:
         generated = llm.generate(
             system,
-            build_user_prompt(question, lang, as_of),
+            user_prompt,
             SqlAnswer,
             max_tokens=MAX_OUTPUT_TOKENS,
         )
@@ -168,68 +185,123 @@ def ask(
     except LLMError as exc:
         return Answer("llm_error", question, message=str(exc), prompt_version=version)
 
-    model_answer = generated.output
+    outcome = _judge(generated.output, access, db_path)
+    first = generated
+    retried = False
+    if retry and outcome.status in RETRYABLE:
+        # Design note: exactly one retry, and only for failures the model can plausibly fix
+        # from the error text (a SQL error or a validator rule). Clarifications, refusals and
+        # invalid output are decisions or format problems, not mistakes to "correct". The
+        # alternative, a loop of several retries, would hide how often the first answer was
+        # wrong and make cost and latency unbounded.
+        retried = True
+        try:
+            second = llm.generate(
+                system,
+                build_retry_prompt(user_prompt, outcome),
+                SqlAnswer,
+                max_tokens=MAX_OUTPUT_TOKENS,
+            )
+        except LLMError:
+            second = None  # keep the first outcome; the failed retry still counts as a retry
+        if second is not None:
+            # The retried SQL goes through the same judge: validator, user connection, executor.
+            outcome = _judge(second.output, access, db_path)
+            generated = _combine(first, second)
 
-    def finish(
-        status: Status,
-        message: str = "",
-        sql: str = "",
-        result: QueryResult | None = None,
-        blocked_rules: tuple[str, ...] = (),
-    ) -> Answer:
-        """Build the Answer with the measurements of this model call filled in."""
-        return Answer(
-            status=status,
-            question=question,
-            message=message,
-            sql=sql,
-            result=result,
-            model_answer=model_answer,
-            usage=generated.usage,
-            latency_ms=generated.latency_ms,
-            cost_usd=profile.cost_usd(generated.usage),
-            prompt_version=version,
-            blocked_rules=blocked_rules,
-        )
+    return Answer(
+        status=outcome.status,
+        question=question,
+        message=outcome.message,
+        sql=outcome.sql,
+        result=outcome.result,
+        model_answer=generated.output,
+        usage=generated.usage,
+        latency_ms=generated.latency_ms,
+        cost_usd=profile.cost_usd(generated.usage),
+        prompt_version=version,
+        blocked_rules=outcome.blocked_rules,
+        retried=retried,
+        retry_succeeded=retried and outcome.status == "answered",
+    )
 
+
+def _combine(first: LLMResult[SqlAnswer], second: LLMResult[SqlAnswer]) -> LLMResult[SqlAnswer]:
+    """Merge two calls: the second output, but tokens and latency of both (cost is honest)."""
+    usage = Usage(
+        input_tokens=first.usage.input_tokens + second.usage.input_tokens,
+        output_tokens=first.usage.output_tokens + second.usage.output_tokens,
+        cached_input_tokens=first.usage.cached_input_tokens + second.usage.cached_input_tokens,
+    )
+    return replace(second, usage=usage, latency_ms=first.latency_ms + second.latency_ms)
+
+
+@dataclass(frozen=True)
+class _Outcome:
+    """What one model answer led to, before the measurements are attached."""
+
+    status: Status
+    message: str = ""
+    sql: str = ""
+    result: QueryResult | None = None
+    blocked_rules: tuple[str, ...] = ()
+
+
+def build_retry_prompt(user_prompt: str, failed: _Outcome) -> str:
+    """Extend the user prompt with the failed SQL and its error, for the single retry.
+
+    Why only the error text: the model sees what it wrote and why it failed, never any data
+    rows, so the retry cannot be used to read results the user may not see.
+    """
+    return (
+        f"{user_prompt}\n\nYour previous SQL was rejected.\n"
+        f"SQL: {failed.sql}\nProblem: {failed.message}\n"
+        "Return a corrected answer, or ask for clarification if the question cannot be "
+        "answered safely."
+    )
+
+
+def _judge(model_answer: SqlAnswer, access: UserAccess | None, db_path: Path) -> _Outcome:
+    """Turn one model answer into an outcome: classify, validate, execute.
+
+    Why a function: the first answer and the retry must take exactly the same path through
+    the validator and the user's connection, so there is one copy of that logic.
+    """
     if model_answer.needs_clarification:
-        return finish(
-            "clarification", message=model_answer.clarification_question or model_answer.approach
+        return _Outcome(
+            "clarification", model_answer.clarification_question or model_answer.approach
         )
     if model_answer.intent == "out_of_scope":
-        return finish("refused", message=model_answer.approach)
-    if not model_answer.sql.strip():
-        return finish("invalid_output", message="the answer contains no SQL")
+        return _Outcome("refused", model_answer.approach)
+    sql = model_answer.sql
+    if not sql.strip():
+        return _Outcome("invalid_output", "the answer contains no SQL")
 
     if access is None:
         try:
-            result = execute_query(db_path, model_answer.sql)
+            return _Outcome("answered", sql=sql, result=execute_query(db_path, sql))
         except SqlExecutionError as exc:
-            return finish("sql_error", message=str(exc), sql=model_answer.sql)
-        return finish("answered", sql=model_answer.sql, result=result)
+            return _Outcome("sql_error", str(exc), sql)
 
-    verdict = validate_sql(model_answer.sql)
+    verdict = validate_sql(sql)
     if not verdict.ok:
         # Design note: unparsable SQL is a plain SQL error, not a security block. The database
         # would reject it anyway; calling it "blocked" would fill the security statistics with
         # typos (the 4 such statements in the recorded runs were all of this kind).
         if verdict.rules == [RULE_PARSE_ERROR]:
-            return finish("sql_error", message=verdict.summary(), sql=model_answer.sql)
-        return finish(
-            "blocked",
-            message=verdict.summary(),
-            sql=model_answer.sql,
-            blocked_rules=tuple(dict.fromkeys(verdict.rules)),
+            return _Outcome("sql_error", verdict.summary(), sql)
+        return _Outcome(
+            "blocked", verdict.summary(), sql, blocked_rules=tuple(dict.fromkeys(verdict.rules))
         )
 
     try:
         connection = open_user_connection(db_path, access)
     except AccessError as exc:
-        return finish("sql_error", message=str(exc), sql=model_answer.sql)
+        return _Outcome("sql_error", str(exc), sql)
     try:
-        result = run_on_connection(connection, model_answer.sql, ROW_LIMIT, TIMEOUT_SECONDS)
+        result = run_on_connection(connection, sql, ROW_LIMIT, TIMEOUT_SECONDS)
     except SqlExecutionError as exc:
-        return finish("sql_error", message=str(exc), sql=model_answer.sql)
+        return _Outcome("sql_error", str(exc), sql)
     finally:
         connection.close()
-    return finish("answered", sql=model_answer.sql, result=result)
+    return _Outcome("answered", sql=sql, result=result)

@@ -63,6 +63,10 @@ class CaseResult:
     # Who asked: the case's own user, or the `--user` override. Shown per case in the security
     # table, so a restricted user's cases are visibly run as that user.
     user: str = ""
+    # Self-correction retry (day 5): whether a second model call was made for this
+    # question, and whether it ended in a result table.
+    retried: bool = False
+    retry_succeeded: bool = False
 
     @property
     def key(self) -> str:
@@ -415,6 +419,20 @@ def render_report(
         f"- Invalid-output rate: {100 * invalid_rate:.1f}%",
         f"- SQL error rate: {100 * sql_error_rate:.1f}%",
         f"- Provider errors: {sum(r.status == 'llm_error' for r in results)}",
+        f"- Retries made: {sum(r.retried for r in results)} "
+        "(= first attempts that ended in sql_error or blocked), "
+        f"succeeded (ended in a result): {sum(r.retry_succeeded for r in results)}, "
+        f"of which correct on the primary metric: "
+        f"{sum(r.retry_succeeded and r.primary for r in results)}",
+        *(
+            [
+                "- The retry corrects syntax and execution errors, not business logic. It is "
+                "measured as a mechanism, not as an accuracy gain. In semantic mode the live "
+                "runs had no sql_error or blocked result to correct (Decision 17).",
+            ]
+            if info.retry
+            else []
+        ),
         "",
         "## Latency and cost",
         "",

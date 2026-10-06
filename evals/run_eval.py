@@ -154,6 +154,7 @@ def run_evaluation(
     validate: bool = False,
     users_path: Path | None = None,
     user_override: str = "",
+    retry: bool = False,
 ) -> list[CaseResult]:
     """Ask every question of every case and grade the answers.
 
@@ -169,6 +170,7 @@ def run_evaluation(
         validate: Backend protection on (validator + per-user connection), see `pipeline.ask`.
         users_path: `users.yaml`, needed when `validate` is on.
         user_override: Ask every question as this user instead of the case's own user.
+        retry: One self-correction retry after a SQL error or block (needs `validate`).
 
     Returns:
         One graded result per (case, language) that has a question text.
@@ -198,6 +200,7 @@ def run_evaluation(
                 semantic_dir=semantic_dir,
                 validate=validate,
                 users_path=users_path,
+                retry=retry,
             )
             strict, lenient = grade(case, answer, reference)
             # Security scoring is separate from `grade` (frozen): it also knows the backend's
@@ -235,6 +238,8 @@ def run_evaluation(
                     security_outcome=security_outcome,
                     security_pass=security_pass,
                     user=user_override or case.user,
+                    retried=answer.retried,
+                    retry_succeeded=answer.retry_succeeded,
                 )
             )
     return results
@@ -255,6 +260,13 @@ def main(
         typer.Option(
             "--validator/--no-validator",
             help="backend protection: SQL validator + per-user filtered connection",
+        ),
+    ] = False,
+    retry: Annotated[
+        bool,
+        typer.Option(
+            "--retry/--no-retry",
+            help="one self-correction retry after a SQL error or block (needs --validator)",
         ),
     ] = False,
     user: Annotated[
@@ -287,6 +299,12 @@ def main(
         raise typer.BadParameter("the holdout is spent; it is not run with new options")
     if suite == "security" and not validator:
         raise typer.BadParameter("the security suite needs --validator (restricted users)")
+    if retry and not validator:
+        raise typer.BadParameter("--retry needs --validator")
+    if retry and suite != "development":
+        # Decision 17: the security suite is not re-run with retry (the backend never
+        # blocked anything live), and the holdout is spent.
+        raise typer.BadParameter("--retry is only measured on the development suite")
     cases: Sequence[GoldenCase]
     if suite == "security":
         directory = SECURITY_SUITE_DIR
@@ -342,7 +360,7 @@ def main(
         semantic_files=layer.file_hashes if layer else {},
         semantic_versions=layer.file_versions if layer else {},
         validator=validator,
-        retry=False,
+        retry=retry,
         user=user,
     )
     users_path = settings.config_dir / "users.yaml"
@@ -375,13 +393,14 @@ def main(
             validate=validator,
             users_path=users_path,
             user_override=user,
+            retry=retry,
         )
         results.extend(replace(result, repeat=repeat) for result in batch)
     report_path = output_dir / "latest.md"
 
     # The full per-question dump (SQL, messages) is for debugging and is not versioned.
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-    tag = "_validated" if validator else ""
+    tag = ("_validated" if validator else "") + ("_retry" if retry else "")
     dump = output_dir / f"{stamp}_{mode}_{info.profile}{tag}.json"
     # Do not label a run verified if sealed files changed while it ran.
     if suite == "holdout" and verify_commitment(directory, settings.db_path) != manifest_hash:

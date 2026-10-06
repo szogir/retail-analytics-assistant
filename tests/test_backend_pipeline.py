@@ -12,6 +12,7 @@ import pytest
 from evals.provenance import file_hash
 from retail_assistant import pipeline
 from retail_assistant.config import PROJECT_ROOT
+from retail_assistant.llm.base import LLMProviderError
 from retail_assistant.llm.fake import FakeLLMClient
 from retail_assistant.llm.profiles import load_profile
 from retail_assistant.llm.schemas import SqlAnswer
@@ -181,3 +182,115 @@ def test_model_refusals_and_clarifications_never_reach_the_backend(full_db_path:
         users_path=USERS_PATH,
     )
     assert answer.status == "refused"
+
+
+# --- self-correction retry ---------------------------------------------------------------
+
+
+def sql_answer(sql: str) -> SqlAnswer:
+    return SqlAnswer.model_validate(
+        {"language": "en", "intent": "metric_query", "approach": "x", "sql": sql}
+    )
+
+
+def run_scripted(fake: FakeLLMClient, db: Path, user: str = "carla", retry: bool = True) -> Answer:
+    return ask(
+        "any question",
+        user,
+        "en",
+        "naive",
+        llm=fake,
+        profile=PROFILE,
+        db_path=db,
+        prompts_dir=PROMPTS_DIR,
+        as_of=AS_OF,
+        validate=True,
+        users_path=USERS_PATH,
+        retry=retry,
+    )
+
+
+def test_retry_fixes_a_first_attempt_that_fails_in_the_database(full_db_path: Path) -> None:
+    fake = FakeLLMClient(
+        responses=[sql_answer("SELECT nope FROM fact_sales"), sql_answer("SELECT 1")]
+    )
+    answer = run_scripted(fake, full_db_path)
+    assert answer.status == "answered"
+    assert (answer.retried, answer.retry_succeeded) == (True, True)
+    assert len(fake.calls) == 2
+    # The model saw its failed SQL and the error, and only that.
+    assert "SELECT nope FROM fact_sales" in fake.calls[1].user
+    assert "Your previous SQL was rejected" in fake.calls[1].user
+    # Cost and latency cover both calls.
+    assert answer.latency_ms == 10.0
+    assert answer.usage is not None and answer.usage.input_tokens == 2000
+
+
+def test_retry_after_a_block_that_stays_blocked_leaks_nothing(full_db_path: Path) -> None:
+    fake = FakeLLMClient(
+        responses=[
+            sql_answer("SELECT * FROM raw.fact_sales"),
+            sql_answer("DELETE FROM fact_sales"),
+        ]
+    )
+    before = file_hash(full_db_path)
+    answer = run_scripted(fake, full_db_path)
+    assert answer.status == "blocked"
+    assert answer.result is None  # leaked 0: nothing was executed, no rows returned
+    assert answer.blocked_rules
+    assert (answer.retried, answer.retry_succeeded) == (True, False)
+    assert len(fake.calls) == 2  # exactly one retry, never more
+    assert file_hash(full_db_path) == before
+
+
+def test_a_retried_statement_still_runs_on_the_users_own_connection(full_db_path: Path) -> None:
+    fake = FakeLLMClient(
+        responses=[
+            sql_answer("SELECT * FROM raw.fact_sales"),
+            sql_answer("SELECT store_id FROM dim_store ORDER BY 1"),
+        ]
+    )
+    answer = run_scripted(fake, full_db_path, user="anna")
+    assert answer.status == "answered" and answer.result is not None
+    assert [row[0] for row in answer.result.rows] == [8, 9, 10]
+
+
+def test_retry_is_off_by_default_and_only_for_errors_and_blocks(full_db_path: Path) -> None:
+    fake = FakeLLMClient(responses=[sql_answer("SELECT nope FROM fact_sales")])
+    off = run_scripted(fake, full_db_path, retry=False)
+    assert (off.status, off.retried, len(fake.calls)) == ("sql_error", False, 1)
+
+    refusal = SqlAnswer.model_validate(
+        {"language": "en", "intent": "out_of_scope", "approach": "no"}
+    )
+    fake = FakeLLMClient(responses=[refusal])
+    answer = run_scripted(fake, full_db_path)
+    assert (answer.status, answer.retried, len(fake.calls)) == ("refused", False, 1)
+
+    fake = FakeLLMClient(responses=[sql_answer("SELECT 1")])
+    answer = run_scripted(fake, full_db_path)
+    assert (answer.status, answer.retried, len(fake.calls)) == ("answered", False, 1)
+
+
+def test_a_failing_retry_call_keeps_the_first_outcome(full_db_path: Path) -> None:
+    fake = FakeLLMClient(
+        responses=[sql_answer("SELECT nope FROM fact_sales"), LLMProviderError("down")]
+    )
+    answer = run_scripted(fake, full_db_path)
+    assert (answer.status, answer.retried, answer.retry_succeeded) == ("sql_error", True, False)
+
+
+def test_retry_needs_the_backend_layers(full_db_path: Path) -> None:
+    with pytest.raises(ValueError, match="retry=True needs validate=True"):
+        ask(
+            "q",
+            "carla",
+            "en",
+            "naive",
+            llm=FakeLLMClient(responses=[]),
+            profile=PROFILE,
+            db_path=full_db_path,
+            prompts_dir=PROMPTS_DIR,
+            as_of=AS_OF,
+            retry=True,
+        )
