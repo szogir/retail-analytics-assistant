@@ -41,14 +41,17 @@ class Usage:
     """Token counts of one call.
 
     Attributes:
-        input_tokens: Tokens read at the full input price (cache writes are counted here).
+        input_tokens: Tokens read at the full input price (cache writes are NOT included).
         output_tokens: Tokens generated.
         cached_input_tokens: Input tokens served from the prompt cache (cheaper).
+        cache_creation_input_tokens: Input tokens written to the prompt cache (dearer than
+            normal input, see `cache_write_per_mtok` in the model profile).
     """
 
     input_tokens: int
     output_tokens: int
     cached_input_tokens: int = 0
+    cache_creation_input_tokens: int = 0
 
 
 @dataclass(frozen=True)

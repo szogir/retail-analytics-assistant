@@ -269,3 +269,19 @@ def test_old_run_files_load_with_an_empty_first_status() -> None:
     old = asdict(result("001", "en", True))
     del old["first_status"]  # a run file written before the field existed
     assert CaseResult(**old).first_status == ""
+
+
+def test_report_header_shows_the_thinking_setting() -> None:
+    info = RunInfo(
+        "semantic",
+        "claude_mid",
+        "m",
+        "v",
+        "2026-10-06",
+        "2026-10-06",
+        4096,
+        thinking="between_tools",
+    )
+    assert "Thinking setting: between_tools" in render_report(
+        info, [result("001", "en", True)], None, 1
+    )

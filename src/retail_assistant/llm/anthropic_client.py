@@ -95,10 +95,12 @@ class AnthropicClient:
         return LLMResult(
             output=output,
             usage=Usage(
-                # Cache writes are billed at the input price (a bit more, ignored here).
-                input_tokens=usage.input_tokens + (usage.cache_creation_input_tokens or 0),
+                input_tokens=usage.input_tokens,
                 output_tokens=usage.output_tokens,
                 cached_input_tokens=usage.cache_read_input_tokens or 0,
+                # Design note: cache writes have their own price (1.25x input for the 5-minute
+                # cache). Earlier code folded them into input_tokens, which under-priced them.
+                cache_creation_input_tokens=usage.cache_creation_input_tokens or 0,
             ),
             latency_ms=latency_ms,
             provider="anthropic",

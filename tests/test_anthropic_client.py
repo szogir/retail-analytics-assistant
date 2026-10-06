@@ -64,8 +64,9 @@ def test_success_maps_output_and_usage(small: ModelProfile) -> None:
     assert result.output is ANSWER
     assert result.provider == "anthropic"
     assert result.model == small.model
-    # Cache writes (10) are counted as normal input; cache reads (500) separately.
-    assert (result.usage.input_tokens, result.usage.cached_input_tokens) == (110, 500)
+    # Cache writes (10) and cache reads (500) are reported separately from normal input (100).
+    assert (result.usage.input_tokens, result.usage.cached_input_tokens) == (100, 500)
+    assert result.usage.cache_creation_input_tokens == 10
     assert result.usage.output_tokens == 40
     assert result.latency_ms >= 0
 

@@ -109,6 +109,8 @@ class RunInfo:
     validator: bool = False
     retry: bool = False
     user: str = ""
+    # The thinking setting sent with every request ("" in run files from before it was recorded).
+    thinking: str = ""
 
 
 def percentile(values: Sequence[float], fraction: float) -> float:
@@ -353,6 +355,7 @@ def render_report(
         f"- Mode: `{info.mode}`, profile: `{info.profile}`, model: `{info.model}`",
         f"- Prompt version: `{info.prompt_version}`, output token limit: {info.max_tokens}",
         f"- Prices checked on: {info.price_date}",
+        f"- Thinking setting: {info.thinking or '(not recorded)'}",
         f"- Golden cases: {case_count}, questions asked: {total} (every case in each language)",
         f"- Suite: {info.suite}; repetitions: {info.repetitions}; scoring: {info.scoring_version}",
         f"- Case SHA-256: `{info.case_hash}`",

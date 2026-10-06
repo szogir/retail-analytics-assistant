@@ -248,6 +248,8 @@ def _combine(first: LLMResult[SqlAnswer], second: LLMResult[SqlAnswer]) -> LLMRe
         input_tokens=first.usage.input_tokens + second.usage.input_tokens,
         output_tokens=first.usage.output_tokens + second.usage.output_tokens,
         cached_input_tokens=first.usage.cached_input_tokens + second.usage.cached_input_tokens,
+        cache_creation_input_tokens=first.usage.cache_creation_input_tokens
+        + second.usage.cache_creation_input_tokens,
     )
     return replace(second, usage=usage, latency_ms=first.latency_ms + second.latency_ms)
 

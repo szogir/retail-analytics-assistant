@@ -341,6 +341,7 @@ def main(
         model=setup.profile.model,
         prompt_version=prompt_version(run_mode),
         price_date=setup.profile.price_date.isoformat(),
+        thinking=setup.profile.thinking_setting,
         run_date=today_iso(),
         max_tokens=MAX_OUTPUT_TOKENS,
         suite=suite,

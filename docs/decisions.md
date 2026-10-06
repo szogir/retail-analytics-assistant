@@ -670,3 +670,30 @@ rules of `commented` mode (the same cases recur: 002, 004, 020, 038 in Hungarian
 the stated limit: the retry fixes syntax and execution errors, not business logic. No accuracy
 comparison and no paired analysis were made; the 18% primary accuracy of this run is the
 `commented` level and says nothing about the retry.
+
+## Decision 18: cache-write pricing and the thinking setting of the model comparison (2026-10-06)
+
+**Cache-write cost.** Until now the adapter folded cache-creation tokens into `input_tokens`, so a
+cache write was priced at the normal input price. The 5-minute cache write costs more (Sonnet 5.5
+2.50, Haiku 4.5 1.25 USD per million tokens, checked on the official price list on 2026-10-06).
+`Usage` now carries `cache_creation_input_tokens` separately, the profiles have
+`cache_write_per_mtok`, and `cost_usd` prices it (tests added). **How much earlier reports
+under-stated cost:** the creation tokens of earlier runs were not stored, so the exact amount is
+not recoverable and the old run files are left unchanged. The error is 0.25 x input price per
+cache-written token (Haiku 0.25 USD, Sonnet 0.50 USD per million). Only the semantic system prompt
+(about 5,300 tokens plus about 800 tokens of output schema) is long enough to be cached on Haiku;
+within a continuous run the cache is written about once per cold start and then read, so the
+realistic under-statement is well below 0.02 USD per run. The worst case (every one of 300 calls
+writing the cache) is about 0.45 USD per 300-question Haiku run; the observed totals (about 0.85
+USD) show reads dominated. Cost figures in earlier reports are therefore slightly low, not
+wrong in order of magnitude. Reports from today on are priced with the write price.
+
+**Thinking.** `claude_small` sends no `thinking` field. For `claude_mid` (Sonnet 5.5) a live probe
+on 2026-10-06 showed that `thinking: {type: disabled}` is rejected (HTTP 400) and the API says to
+send `{type: between_tools}` to turn thinking off: the model then does not think before
+responding, and only short updates between tool calls come back as thinking blocks. Our calls use
+no tools, so `between_tools` means no thinking, matching `claude_small`. The adapter sends the
+profile's `request_options` unchanged. The old comment in `config/models.yaml` ("switch thinking
+off") now matches the value, and the report header prints the thinking setting. Editing
+`models.yaml` changes `config_hash`, so runs made before and after this edit are not pairable
+(they would not be across models anyway).

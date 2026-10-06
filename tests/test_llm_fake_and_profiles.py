@@ -91,7 +91,8 @@ def test_factory_builds_the_claude_adapter_without_network(tmp_path: Path) -> No
 def test_factory_rejects_an_unsupported_provider(tmp_path: Path) -> None:
     (tmp_path / "models.yaml").write_text(
         "profiles:\n  x:\n    provider: other\n    model: m\n    price_date: 2026-01-01\n"
-        "    input_per_mtok: 1\n    cached_input_per_mtok: 1\n    output_per_mtok: 1\n",
+        "    input_per_mtok: 1\n    cached_input_per_mtok: 1\n"
+        "    cache_write_per_mtok: 1\n    output_per_mtok: 1\n",
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="unsupported provider"):
@@ -103,3 +104,17 @@ def test_the_api_key_is_never_printed() -> None:
     assert "sk-secret-value" not in repr(settings)
     assert settings.anthropic_api_key is not None
     assert settings.anthropic_api_key.get_secret_value() == "sk-secret-value"
+
+
+def test_cache_writes_are_priced_separately_from_normal_input() -> None:
+    profile = load_profile(MODELS_FILE, "claude_small")
+    usage = Usage(input_tokens=0, output_tokens=0, cache_creation_input_tokens=1_000_000)
+    assert profile.cost_usd(usage) == pytest.approx(profile.cache_write_per_mtok)
+    assert profile.cache_write_per_mtok > profile.input_per_mtok
+
+
+def test_the_thinking_settings_of_both_profiles_mean_no_thinking() -> None:
+    # The model comparison must differ only in the model: small sends no thinking field; for
+    # mid the API accepts only `between_tools` as the "off" value (it rejects `disabled`).
+    assert load_profile(MODELS_FILE, "claude_small").thinking_setting == "not sent (model default)"
+    assert load_profile(MODELS_FILE, "claude_mid").thinking_setting == "between_tools"

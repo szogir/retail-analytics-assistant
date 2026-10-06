@@ -33,6 +33,7 @@ class ModelProfile(BaseModel):
         price_date: The date the prices were checked. Prices go stale, so it is stored.
         input_per_mtok: USD per million input tokens.
         cached_input_per_mtok: USD per million input tokens served from the prompt cache.
+        cache_write_per_mtok: USD per million input tokens written to the (5-minute) cache.
         output_per_mtok: USD per million output tokens.
         supports_temperature: False for models that reject a temperature parameter.
         request_options: Extra request fields merged into every call.
@@ -46,9 +47,18 @@ class ModelProfile(BaseModel):
     price_date: dt.date
     input_per_mtok: float
     cached_input_per_mtok: float
+    cache_write_per_mtok: float
     output_per_mtok: float
     supports_temperature: bool = True
     request_options: dict[str, Any] = {}
+
+    @property
+    def thinking_setting(self) -> str:
+        """The thinking setting this profile sends, as text for the eval report header."""
+        thinking = self.request_options.get("thinking")
+        if thinking is None:
+            return "not sent (model default)"
+        return str(thinking.get("type"))
 
     def cost_usd(self, usage: Usage) -> float:
         """Return the price of one call in US dollars.
@@ -62,6 +72,7 @@ class ModelProfile(BaseModel):
         return (
             usage.input_tokens * self.input_per_mtok
             + usage.cached_input_tokens * self.cached_input_per_mtok
+            + usage.cache_creation_input_tokens * self.cache_write_per_mtok
             + usage.output_tokens * self.output_per_mtok
         ) / _PER_MILLION
 

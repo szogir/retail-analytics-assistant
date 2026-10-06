@@ -4,7 +4,8 @@
 # MODEL NAMES: filled in on 2026-10-04 from the Anthropic model list - please re-check them
 # against the current list before a real run.
 #
-# Prices are USD per million tokens. They are a snapshot (see `price_date`): check the
+# Prices are USD per million tokens (checked against the official price list on 2026-10-06;
+# cache write = 5-minute cache). They are a snapshot (see `price_date`): check the
 # provider's price list again before you quote a cost number anywhere.
 #
 # supports_temperature: the newest model families reject sampling parameters (a request with
@@ -15,13 +16,19 @@ profiles:
   claude_mid:
     provider: anthropic
     model: claude-sonnet-5-5
-    price_date: 2026-10-04
+    price_date: 2026-10-06
     input_per_mtok: 2.00
     cached_input_per_mtok: 0.20
+    cache_write_per_mtok: 2.50  # 5-minute cache write
     output_per_mtok: 10.00
     supports_temperature: false
-    # Thinking is on by default for this model. Our output schema already has an `approach`
-    # field before the SQL, so we switch the extra thinking off (accepted at effort "high" or lower).
+    # Thinking: the model comparison must differ from claude_small ONLY in the model.
+    # claude_small sends no `thinking` field (no extra thinking). For this model the API says
+    # (HTTP 400 on `disabled`, checked live on 2026-10-06): "To turn thinking off on this model,
+    # send thinking: {type: between_tools}. The model does not think before responding; the
+    # short updates it writes between tool calls come back as thinking blocks." We call without
+    # tools, so there is no thinking at all. The output schema's `approach` field (before the
+    # SQL) is the visible plan.
     request_options:
       thinking:
         type: between_tools
@@ -29,9 +36,10 @@ profiles:
   claude_small:
     provider: anthropic
     model: claude-haiku-4-5
-    price_date: 2026-10-04
+    price_date: 2026-10-06
     input_per_mtok: 1.00
     cached_input_per_mtok: 0.10
+    cache_write_per_mtok: 1.25  # 5-minute cache write
     output_per_mtok: 5.00
     supports_temperature: true
     request_options: {}
