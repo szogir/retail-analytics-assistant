@@ -67,6 +67,9 @@ class CaseResult:
     # question, and whether it ended in a result table.
     retried: bool = False
     retry_succeeded: bool = False
+    # Status of the first attempt (also when a retry changed the final status). Empty in run
+    # files written before this field existed.
+    first_status: str = ""
 
     @property
     def key(self) -> str:

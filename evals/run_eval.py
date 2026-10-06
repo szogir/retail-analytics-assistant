@@ -240,6 +240,7 @@ def run_evaluation(
                     user=user_override or case.user,
                     retried=answer.retried,
                     retry_succeeded=answer.retry_succeeded,
+                    first_status=answer.first_status,
                 )
             )
     return results

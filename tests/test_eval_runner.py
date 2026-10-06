@@ -1,6 +1,6 @@
 """Tests for the evaluation: table comparison, report metrics and the runner (fake LLM)."""
 
-from dataclasses import replace
+from dataclasses import asdict, replace
 from decimal import Decimal
 from pathlib import Path
 
@@ -263,3 +263,9 @@ def test_report_counts_retries_and_their_successes() -> None:
     text = render_report(info, results, baseline=None, case_count=3)
     assert "Retries made: 2 " in text
     assert "succeeded (ended in a result): 1, of which correct on the primary metric:" in text
+
+
+def test_old_run_files_load_with_an_empty_first_status() -> None:
+    old = asdict(result("001", "en", True))
+    del old["first_status"]  # a run file written before the field existed
+    assert CaseResult(**old).first_status == ""

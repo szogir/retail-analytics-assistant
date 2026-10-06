@@ -648,3 +648,25 @@ mechanism therefore uses `commented` mode (`--retry`, validator on, user carla, 
 it reports how many first attempts ended in `sql_error` or `blocked`, how many retries ran, how
 many of those ended in a result, and how many of those are correct on the primary metric. It is
 not an accuracy comparison and has no paired analysis.
+
+**Live measurement of the retry mechanism (2026-10-06, `commented`, `claude_small`, validator on,
+user carla, retry on, 3 repetitions, 50 cases x 2 languages x 3 = 300 questions, cost 1.15 USD,
+run dump `evals/golden_set/artifacts/20261006-190250-350523_commented_claude_small_validated_retry.json`,
+not versioned).**
+
+| | count |
+|---|---|
+| First attempts that ended in `sql_error` or `blocked` (= retries made) | 13 |
+| Retries that ended in a result table (ran SQL) | 11 |
+| Of those, correct on the primary metric | 2 (cases 006 en, 019 hu) |
+| Retries that stayed `sql_error` | 2 (004 hu, 020 hu, repetition 3) |
+
+The first-attempt split between `sql_error` and `blocked` is not visible in this run (only the
+final status was recorded; the `first_status` field was added afterwards), but no final status was
+`blocked`. Final statuses: 246 answered, 36 refused, 16
+clarification, 2 sql_error. Reading: the retry turned 11 of 13 failing statements into
+statements that run, but only 2 of those 11 are also correct; the rest are the missing business
+rules of `commented` mode (the same cases recur: 002, 004, 020, 038 in Hungarian). This confirms
+the stated limit: the retry fixes syntax and execution errors, not business logic. No accuracy
+comparison and no paired analysis were made; the 18% primary accuracy of this run is the
+`commented` level and says nothing about the retry.

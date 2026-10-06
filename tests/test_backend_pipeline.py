@@ -294,3 +294,13 @@ def test_retry_needs_the_backend_layers(full_db_path: Path) -> None:
             as_of=AS_OF,
             retry=True,
         )
+
+
+def test_first_status_records_the_first_attempt_even_after_a_retry(full_db_path: Path) -> None:
+    fake = FakeLLMClient(
+        responses=[sql_answer("SELECT * FROM raw.fact_sales"), sql_answer("SELECT 1")]
+    )
+    fixed = run_scripted(fake, full_db_path)
+    assert (fixed.first_status, fixed.status) == ("blocked", "answered")
+    plain = run_scripted(FakeLLMClient(responses=[sql_answer("SELECT 1")]), full_db_path)
+    assert (plain.first_status, plain.status) == ("answered", "answered")

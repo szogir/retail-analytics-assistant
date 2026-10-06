@@ -77,6 +77,7 @@ class Answer:
         blocked_rules: Rule names that made the validator refuse the SQL (status "blocked").
         retried: True if a second model call was made after a "sql_error" or "blocked" result.
         retry_succeeded: True if that retry ended in status "answered".
+        first_status: Status of the first attempt, also when a retry changed the final status.
     """
 
     status: Status
@@ -92,6 +93,7 @@ class Answer:
     blocked_rules: tuple[str, ...] = field(default_factory=tuple)
     retried: bool = False
     retry_succeeded: bool = False
+    first_status: str = ""
 
 
 def build_user_prompt(question: str, lang: Language, as_of: dt.date) -> str:
@@ -181,12 +183,25 @@ def ask(
             max_tokens=MAX_OUTPUT_TOKENS,
         )
     except LLMOutputError as exc:
-        return Answer("invalid_output", question, message=str(exc), prompt_version=version)
+        return Answer(
+            "invalid_output",
+            question,
+            message=str(exc),
+            prompt_version=version,
+            first_status="invalid_output",
+        )
     except LLMError as exc:
-        return Answer("llm_error", question, message=str(exc), prompt_version=version)
+        return Answer(
+            "llm_error",
+            question,
+            message=str(exc),
+            prompt_version=version,
+            first_status="llm_error",
+        )
 
     outcome = _judge(generated.output, access, db_path)
     first = generated
+    first_status = outcome.status
     retried = False
     if retry and outcome.status in RETRYABLE:
         # Design note: exactly one retry, and only for failures the model can plausibly fix
@@ -223,6 +238,7 @@ def ask(
         blocked_rules=outcome.blocked_rules,
         retried=retried,
         retry_succeeded=retried and outcome.status == "answered",
+        first_status=first_status,
     )
 
 
