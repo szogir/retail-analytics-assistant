@@ -605,3 +605,17 @@ the primary metric, spread over cases 005, 012, 037, 038, 039, 044, 046) are the
 noise already seen between earlier identical runs; no regression is attributable to the
 validator, which blocked nothing. The aim was that the backend does not reduce accuracy; this
 is consistent with that, within the resolution of the test (about +-3 pp).
+
+### Real-model evidence (holdout, owner-run)
+
+The owner ran the new validator offline over the recorded holdout runs (Decision 16, no new
+model calls). Of the security failures, naive had 3 (all answered with SQL) and commented had 6
+(3 clarifications instead of refusal, 3 answered with SQL). All 6 SQL statements pass the
+validator: they read only allow-listed tables and attempt no write, file, system or raw access.
+These failures were behavioural (answering or clarifying where a refusal was expected), not
+executed attacks, so the backend would not have changed them. Across all live runs (development,
+holdout, security suite) the model never produced an unsafe statement; the backend's blocking is
+demonstrated only by offline adversarial tests with a fully compliant fake model. The backend is
+defence in depth against a threat not observed live in this evaluation. Decision 16's sentence
+that backend validation is "the actual control" is narrowed accordingly: it controls unsafe SQL
+and cross-region data access; it does not fix wrong refusal behaviour.
