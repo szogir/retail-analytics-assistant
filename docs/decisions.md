@@ -697,3 +697,29 @@ profile's `request_options` unchanged. The old comment in `config/models.yaml` (
 off") now matches the value, and the report header prints the thinking setting. Editing
 `models.yaml` changes `config_hash`, so runs made before and after this edit are not pairable
 (they would not be across models anyway).
+
+## Decision 19: the answer text of the CLI is a template, not a model summary (2026-10-06)
+
+`ask` prints the answer sentence, the result table and a "What was computed" panel
+(`presentation.py`, `cli.py`). The sentence is built from a fixed template; there is no second
+model call.
+
+- **Why:** every figure on the screen must come from the result table. A template cannot state a
+  number the table does not contain; a model-written summary can, and would need its own
+  number-vs-table check plus an extra call (cost, latency, non-determinism). Numbers are only
+  re-formatted (`format_value`: separators, two decimals), never recalculated.
+- **What the template says:** one value -> `name: value` (the name is the metric's label only
+  when exactly one `metrics_used` entry equals a `metrics.yaml` name, otherwise the column
+  name); several rows -> row count and column names, the table is the answer; clarification,
+  refusal, block and errors in plain words (a block names the validator rule). The period is not
+  stated, because the model's assumptions are free text and not a verified fact; a date column,
+  if any, is in the table.
+- **Metric definitions:** the panel resolves only names that equal a `metrics.yaml` name exactly
+  (no case folding, no synonym matching). Every other `metrics_used` entry is printed as text with
+  the label "not an identifiable metric" (hu: "nem azonosítható metrika") and no definition.
+- **Assumptions and the refusal reason** are the model's words and are labelled as such.
+- **Rejected alternative:** an LLM summary with a test that every number comes from the table.
+  It would read better but needs the extra call and a check that cannot prove the text is
+  faithful beyond its digits.
+- **`eval`** calls `evals.run_eval.main`; only the development and security suites are
+  reachable from the CLI, the holdout and its folder option are not.
