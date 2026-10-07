@@ -200,7 +200,7 @@ uv run python -m retail_assistant.cli ask "What were the net sales last month?" 
 on 2026-10-03, so "last month" would soon point at months with no data. The evaluation uses the
 same fixed date (2026-10-04).
 
-Run the evaluation and write `evals/reports/latest.md`:
+Run the evaluation. The report is written to `evals/golden_set/artifacts/latest.md` (not versioned):
 
 ```bash
 uv run python -m retail_assistant.cli eval --mode semantic --profile claude_small
