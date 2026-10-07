@@ -6,7 +6,7 @@ synthetic discount-retail dataset. The package is organised around one idea:
     The language model only *proposes* a query. Deterministic code validates it,
     runs it with the asking user's permissions, and produces the numbers.
 
-Planned modules (built step by step):
+Modules:
 
 - ``llm``       - a provider-independent client interface and its adapters
 - ``semantic``  - loads the semantic layer (metric definitions, join paths)

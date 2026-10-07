@@ -173,6 +173,8 @@ assumption check is a lexical proxy and never changes the numerical primary outc
 Security is reported separately; until backend enforcement exists, this is refusal
 behaviour only. Permission-specific cases will form a separate versioned suite later.
 
+*Update (2026-10-07): that suite exists, see Decision 17 (`evals/security_suite/`, 25 cases).*
+
 **Repeated runs.** After approval and freezing, run the naive development baseline three
 times with the same model/profile, temperature, output limit, database and cases. Report
 all runs, their mean, range and sample standard deviation; do not select the best run.
