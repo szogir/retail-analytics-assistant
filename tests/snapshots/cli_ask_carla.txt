@@ -8,9 +8,9 @@ Net sales (EUR): 1,234,567.50
 ┌─ What was computed ─────────────────────────────────────────────────────────────────────────────┐
 │ User: carla (all stores)                                                                        │
 │ Validator: passed; ran on the user's own filtered connection                                    │
-│ SQL:                                                                                            │
+│ SQL actually executed:                                                                          │
 │ SELECT 1234567.5 AS net_sales_eur                                                               │
-│ Metrics:                                                                                        │
+│ Metric named by the model (catalogue definition, not the executed code):                        │
 │ net_sales_eur - Net sales (EUR): Gross amount - discount - VAT (VAT is included in the gross    │
 │ amount), divided by the exchange rate of the sale day, in euro. Returns are negative lines:     │
 │ they reduce net sales as negative rows and are NOT filtered out. Do not add NOT f.is_return to  │
@@ -18,6 +18,8 @@ Net sales (EUR): 1,234,567.50
 │   = SUM((f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate)                      │
 │   always filtered by: NOT f.is_cancelled AND NOT s.is_test_store                                │
 │ total revenue - not an identifiable metric                                                      │
+│ ⚠ heuristic check: SQL does not reference discount_amount, eur_rate, gross_amount,              │
+│ is_cancelled, is_test_store, vat_amount (net_sales_eur)                                         │
 │ Assumptions (stated by the model):                                                              │
 │   - Calendar month, EUR                                                                         │
 │ Latency: 5 ms                                                                                   │

@@ -21,6 +21,7 @@ from rich.table import Table
 from rich.text import Text
 
 from retail_assistant.pipeline import Answer, Language
+from retail_assistant.semantic.metric_check import check_metric
 from retail_assistant.semantic.models import Metric, SemanticLayer
 from retail_assistant.sql.access import UserAccess
 
@@ -51,9 +52,16 @@ TEXTS: dict[Language, dict[str, str]] = {
         "validator_passed": "passed; ran on the user's own filtered connection",
         "validator_blocked": "BLOCKED by rule(s): {rules}",
         "validator_none": "no SQL reached the validator",
-        "sql": "SQL",
-        "metrics": "Metrics",
+        "sql": "SQL actually executed",
+        "metrics": "Metric named by the model (catalogue definition, not the executed code)",
         "no_metrics": "(none named)",
+        "check_none": "Heuristic check: no catalogue metric named, no check",
+        "check_missing": "⚠ heuristic check: SQL does not reference {columns} ({metric})",
+        "check_ok": (
+            "Heuristic check found no missing element ({metric}); it compares column "
+            "names only and does not prove the SQL is correct"
+        ),
+        "check_unparsable": "Heuristic check not possible ({metric}): could not parse the SQL",
         "unidentified": "not an identifiable metric",
         "assumptions": "Assumptions (stated by the model)",
         "none": "(none)",
@@ -85,9 +93,24 @@ TEXTS: dict[Language, dict[str, str]] = {
         "validator_passed": "átment; a felhasználó saját szűrt kapcsolatán futott",
         "validator_blocked": "BLOKKOLVA, szabály: {rules}",
         "validator_none": "nem érkezett SQL a validátorhoz",
-        "sql": "SQL",
-        "metrics": "Metrikák",
+        "sql": "Ténylegesen futtatott SQL",
+        "metrics": (
+            "A modell által megnevezett metrika (katalógus-definíció, nem a futtatott kód)"
+        ),
         "no_metrics": "(nincs megnevezve)",
+        "check_none": (
+            "Heurisztikus ellenőrzés: nincs megnevezett katalógus-metrika, nincs ellenőrzés"
+        ),
+        "check_missing": (
+            "⚠ heurisztikus ellenőrzés: az SQL nem hivatkozik erre: {columns} ({metric})"
+        ),
+        "check_ok": (
+            "A heurisztikus ellenőrzés nem talált hiányzó elemet ({metric}); csak oszlopneveket "
+            "hasonlít, nem bizonyítja az SQL helyességét"
+        ),
+        "check_unparsable": (
+            "Heurisztikus ellenőrzés nem lehetséges ({metric}): az SQL nem értelmezhető"
+        ),
         "unidentified": "nem azonosítható metrika",
         "assumptions": "Feltevések (a modell állítja)",
         "none": "(nincs)",
@@ -241,6 +264,31 @@ def _metric_definition(metric: Metric, lang: Language) -> str:
     return "\n".join(lines)
 
 
+def _check_lines(sql: str, resolved: Sequence[Metric], lang: Language) -> list[str]:
+    """Lines of the heuristic check for the executed SQL (see `metric_check`).
+
+    Why no tick on success: the check compares column names only. A success message that looked
+    like approval would claim more than the check knows.
+    """
+    texts = TEXTS[lang]
+    if not resolved:
+        return [texts["check_none"]]
+    lines: list[str] = []
+    for metric in resolved:
+        outcome = check_metric(metric, sql)
+        if outcome.kind == "missing":
+            lines.append(
+                texts["check_missing"].format(
+                    columns=", ".join(outcome.missing), metric=outcome.metric
+                )
+            )
+        elif outcome.kind == "ok":
+            lines.append(texts["check_ok"].format(metric=outcome.metric))
+        else:
+            lines.append(texts["check_unparsable"].format(metric=outcome.metric))
+    return lines
+
+
 def _validator_line(answer: Answer, validator_on: bool, lang: Language) -> str:
     texts = TEXTS[lang]
     if not validator_on:
@@ -301,6 +349,8 @@ def computed_panel(
     for name in unidentified:
         # Shown as plain text, with no definition: the name is the model's wording.
         parts.append(Text(f"{name} - {texts['unidentified']}"))
+    if answer.sql:
+        parts.extend(Text(line) for line in _check_lines(answer.sql, resolved, lang))
     assumptions = answer.model_answer.assumptions if answer.model_answer else []
     parts.append(Text(f"{texts['assumptions']}:"))
     for assumption in assumptions or [texts["none"]]:
