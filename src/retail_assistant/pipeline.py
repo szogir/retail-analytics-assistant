@@ -21,6 +21,7 @@ from retail_assistant.llm.base import LLMClient, LLMError, LLMOutputError, LLMRe
 from retail_assistant.llm.profiles import ModelProfile
 from retail_assistant.llm.schemas import SqlAnswer
 from retail_assistant.semantic.context import Mode, build_system_prompt, prompt_version
+from retail_assistant.semantic.loader import load_semantic_layer
 from retail_assistant.sql.access import AccessError, UserAccess, load_users, open_user_connection
 from retail_assistant.sql.executor import (
     QueryResult,
@@ -51,10 +52,20 @@ RETRYABLE: tuple[str, ...] = ("sql_error", "blocked")
 #   refused        the model declined (out of scope, write request, ...)
 #   sql_error      the model's SQL failed in the database (or could not even be parsed)
 #   blocked        the validator refused the SQL because it breaks a safety rule; it was not run
+#   definition     the model named exactly one catalogue metric for a "what does X mean"
+#                  question; the answer is the catalogue's definition, no SQL is run (validated
+#                  path only)
 #   invalid_output the model's output was unusable (refusal by the API, bad JSON, no SQL)
 #   llm_error      the provider call failed (network, auth, rate limit)
 Status = Literal[
-    "answered", "clarification", "refused", "sql_error", "blocked", "invalid_output", "llm_error"
+    "answered",
+    "clarification",
+    "refused",
+    "definition",
+    "sql_error",
+    "blocked",
+    "invalid_output",
+    "llm_error",
 ]
 
 
@@ -201,7 +212,8 @@ def ask(
             first_status="llm_error",
         )
 
-    outcome = _judge(generated.output, access, db_path)
+    catalogue = _catalogue_names(generated.output, access, semantic_dir)
+    outcome = _judge(generated.output, access, db_path, catalogue)
     first = generated
     first_status = outcome.status
     retried = False
@@ -223,7 +235,7 @@ def ask(
             second = None  # keep the first outcome; the failed retry still counts as a retry
         if second is not None:
             # The retried SQL goes through the same judge: validator, user connection, executor.
-            outcome = _judge(second.output, access, db_path)
+            outcome = _judge(second.output, access, db_path, catalogue)
             generated = _combine(first, second)
 
     return Answer(
@@ -281,16 +293,51 @@ def build_retry_prompt(user_prompt: str, failed: _Outcome) -> str:
     )
 
 
-def _judge(model_answer: SqlAnswer, access: UserAccess | None, db_path: Path) -> _Outcome:
+def _catalogue_names(
+    model_answer: SqlAnswer, access: UserAccess | None, semantic_dir: Path | None
+) -> frozenset[str]:
+    """Names of the catalogue metrics, loaded only when a definition answer needs them.
+
+    Why lazy: the catalogue matters only for `intent == "definition"` on the validated path.
+    Every other answer skips the file read, and the legacy path never reaches it.
+    """
+    if access is None or semantic_dir is None or model_answer.intent != "definition":
+        return frozenset()
+    layer = load_semantic_layer(semantic_dir)
+    return frozenset(metric.name for metric in layer.metrics.metrics)
+
+
+def _judge(
+    model_answer: SqlAnswer,
+    access: UserAccess | None,
+    db_path: Path,
+    catalogue: frozenset[str] = frozenset(),
+) -> _Outcome:
     """Turn one model answer into an outcome: classify, validate, execute.
 
     Why a function: the first answer and the retry must take exactly the same path through
     the validator and the user's connection, so there is one copy of that logic.
+
+    Args:
+        model_answer: What the model returned.
+        access: The asking user's permissions; None on the legacy path.
+        db_path: The DuckDB file.
+        catalogue: Metric names from `metrics.yaml` (empty unless a definition is possible).
     """
     if model_answer.needs_clarification:
         return _Outcome(
             "clarification", model_answer.clarification_question or model_answer.approach
         )
+    # Design note: a definition is answered from the catalogue only when the model named exactly
+    # one metric AND that name equals a `metrics.yaml` name (no fuzzy matching, like the panel).
+    # Anything else keeps the old behaviour, so a vague "definition" can never present a
+    # catalogue entry the model did not clearly mean. No SQL runs, so nothing reaches the data.
+    if (
+        model_answer.intent == "definition"
+        and len(model_answer.metrics_used) == 1
+        and model_answer.metrics_used[0] in catalogue
+    ):
+        return _Outcome("definition", model_answer.metrics_used[0])
     if model_answer.intent == "out_of_scope":
         return _Outcome("refused", model_answer.approach)
     sql = model_answer.sql

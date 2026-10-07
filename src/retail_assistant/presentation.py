@@ -41,6 +41,7 @@ TEXTS: dict[Language, dict[str, str]] = {
         "truncated": "The result was cut at the row limit; more rows exist.",
         "clarification": "I need one more detail before I can answer: {text}",
         "refused": "I cannot answer this question. The model's reason: {text}",
+        "definition": "Definition of {label}: {description}",
         "blocked": "The request was blocked by the safety checks and was not run. Rules: {rules}.",
         "sql_error": "The generated SQL could not be run: {text}",
         "invalid_output": "The model's answer was unusable: {text}",
@@ -82,6 +83,7 @@ TEXTS: dict[Language, dict[str, str]] = {
         "truncated": "Az eredmény a sorlimitnél csonkolva lett; több sor is van.",
         "clarification": "Még egy részletre van szükségem a válaszhoz: {text}",
         "refused": "Erre a kérdésre nem tudok válaszolni. A modell indoka: {text}",
+        "definition": "{label} definíciója: {description}",
         "blocked": "A kérést a biztonsági ellenőrzés blokkolta, nem futott le. Szabályok: {rules}.",
         "sql_error": "A generált SQL nem futtatható: {text}",
         "invalid_output": "A modell válasza használhatatlan volt: {text}",
@@ -207,6 +209,14 @@ def answer_text(answer: Answer, lang: Language, metrics: Sequence[Metric] = ()) 
         return texts["clarification"].format(text=model_text)
     if answer.status == "refused":
         return texts["refused"].format(text=model_text)
+    if answer.status == "definition":
+        # The text is the catalogue's own, never the model's. The pipeline only sets this status
+        # for one exactly matching metric, so `metrics` has that metric.
+        if len(metrics) != 1:
+            return texts["invalid_output"].format(text=model_text)
+        metric = metrics[0]
+        label = metric.labels.hu if lang == "hu" else metric.labels.en
+        return texts["definition"].format(label=label, description=metric.description.strip())
     if answer.status == "blocked":
         return texts["blocked"].format(rules=", ".join(answer.blocked_rules))
     if answer.status in ("sql_error", "invalid_output", "llm_error"):

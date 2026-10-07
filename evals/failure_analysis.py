@@ -38,7 +38,7 @@ HEURISTIC_NOTICE = (
 RESULT_KINDS = ("result", "result_scoped")
 
 # Labels for answers that never produced a comparable table.
-NO_TABLE_STATUSES = ("sql_error", "clarification", "refused", "invalid_output")
+NO_TABLE_STATUSES = ("sql_error", "clarification", "refused", "definition", "invalid_output")
 
 _RETURN_EXCLUSION = re.compile(r"not\s+\w*\.?is_return|is_return\s*=\s*(false|0)")
 _FX_MULTIPLICATION = re.compile(r"\*\s*\w*\.?eur_rate")
