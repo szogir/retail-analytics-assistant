@@ -15,6 +15,7 @@ import pytest
 from pydantic import BaseModel
 
 from evals import paired_analysis
+from evals.compare import compare_tables
 from evals.golden import load_golden_set
 from evals.report import CaseResult, RunInfo, render_report
 from evals.run_eval import run_evaluation
@@ -190,8 +191,14 @@ def test_permission_references_agree_with_the_backend_and_forbidden_ones_differ(
             reference = full.execute(case.reference_sql or "").fetchall()
             unscoped = full.execute(case.forbidden_reference_sql).fetchall()
             through_backend = anna.execute(case.forbidden_reference_sql).fetchall()
-            assert through_backend == reference, case.id
-            assert unscoped != reference, case.id
+            # Why the project's comparator and not `==`: DuckDB sums in parallel and the two
+            # connections hold the rows in a different physical order, so the same query can
+            # differ in the last digits of a float (seen: 19573.26846946602 vs
+            # 19573.268469465904). The comparator allows the preregistered relative tolerance
+            # of 1e-6 and, unless the case says otherwise, ignores the row order.
+            same = compare_tables(reference, through_backend, case.order_sensitive).strict
+            assert same, case.id
+            assert not compare_tables(reference, unscoped, case.order_sensitive).strict, case.id
     finally:
         full.close()
         anna.close()
