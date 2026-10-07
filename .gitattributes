@@ -3,3 +3,9 @@
 *.duckdb binary
 *.parquet binary
 *.png binary
+
+# Published sealed-suite files and run files: byte-for-byte as hashed (no line-ending or
+# encoding conversion), because their SHA-256 hashes are committed in
+# evals/holdout_manifest.json (Decision 9).
+evals/holdout_published/** -text
+evals/results/2026-10-05-holdout/** -text

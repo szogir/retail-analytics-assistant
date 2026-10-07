@@ -1,6 +1,10 @@
 # Checks that run automatically before every local commit.
 # Install once with:  uv run pre-commit install
 # Update hook versions with:  uv run pre-commit autoupdate
+# The published holdout files and the holdout run files must stay byte-identical to what was
+# hashed, so NO hook (whitespace fixer, ruff format, secret scanner) may touch or flag them.
+# They contain SHA-256 digests, not credentials.
+exclude: ^evals/(holdout_published|results/2026-10-05-holdout)/
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

@@ -45,3 +45,19 @@ def test_development_never_reads_holdout_environment(monkeypatch: pytest.MonkeyP
 
     monkeypatch.setattr(suites, "os", SimpleNamespace(environ=SimpleNamespace(get=forbidden)))
     assert suites.suite_directory("development").name == "golden_set"
+
+
+def test_only_the_published_copy_may_live_inside_the_repository(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "repo"
+    published = repo / "evals" / "holdout_published"
+    published.mkdir(parents=True)
+    other = repo / "evals" / "holdout_private"
+    other.mkdir()
+    monkeypatch.setattr(suites, "PROJECT_ROOT", repo)
+    assert suites.suite_directory("holdout", published) == published.resolve()
+    with pytest.raises(ValueError, match="outside"):
+        suites.suite_directory("holdout", other)
+    with pytest.raises(ValueError, match="outside"):
+        suites.suite_directory("holdout", published / "..")

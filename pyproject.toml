@@ -40,6 +40,8 @@ packages = ["src/retail_assistant"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# Published sealed-suite files must stay byte-identical (see .gitattributes).
+extend-exclude = ["evals/holdout_published"]
 
 [tool.ruff.lint]
 # E/F: errors, I: import order, B: likely bugs, UP: modern syntax,
