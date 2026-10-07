@@ -35,8 +35,8 @@ uv run python -m retail_assistant.cli ask "Show me the sales of the large stores
 ```
 
 Shows: "I need one more detail before I can answer: What criterion defines a 'large store'?" and
-`Validator: no SQL reached the validator`. This case asked for clarification in all 6 recorded
-development runs. Do not substitute "How did we do last quarter?": the semantic mode answers that
+`Validator: no SQL reached the validator`. In the recorded development run it asked for clarification in all 6 questions (3
+repetitions, 2 languages). Do not substitute "How did we do last quarter?": the semantic mode answers that
 one with stated assumptions instead of asking (a known weakness, see the README limitations).
 
 ## 4. A blocked attack
