@@ -1,7 +1,8 @@
 """Claude adapter: implements `LLMClient` with the official Anthropic SDK.
 
 What it does: sends one request to the Messages API and returns the answer already parsed
-into the requested Pydantic model (structured output), with token usage and latency.
+into the requested Pydantic model (structured output), with token usage and latency. The
+tokens of an unusable answer (refused, truncated, not valid JSON) are reported too.
 
 Why it exists: it is the only module that knows about the Anthropic SDK. Everything else
 talks to the `LLMClient` protocol.
@@ -13,7 +14,7 @@ import time
 from typing import Any
 
 import anthropic
-from pydantic import ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from retail_assistant.llm.base import (
     LLMOutputError,
@@ -64,38 +65,43 @@ class AnthropicClient:
             # question, so the provider can serve it from its cache at a lower price.
             "system": [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
             "messages": [{"role": "user", "content": user}],
-            "output_format": schema,
+            "output_config": {"format": output_format(schema)},
         }
-        # Design note: the SDK's typed `parse()` has no temperature argument and the newest
-        # models reject it. The profile says whether the model accepts one; if so it goes in
-        # as an extra body field. The alternative, always sending it, would break those models.
+        # Design note: the profile says whether the model accepts a temperature (the newest
+        # models reject it); if so it goes in as an extra body field. The alternative, always
+        # sending it, would break those models.
         if self._profile.supports_temperature:
             request["extra_body"] = {"temperature": temperature}
         request.update(self._profile.request_options)
 
+        # Design note: the raw `create` call plus our own validation, instead of the SDK's
+        # `messages.parse()`. `parse()` downloads and validates in one step and raises on invalid
+        # JSON WITHOUT handing over the response, so the billed tokens of an unusable answer were
+        # lost. The request body is byte-identical to the one `parse()` sends
+        # (`tests/test_anthropic_payload.py` compares them through a fake transport); only the
+        # SDK's own telemetry headers differ. The alternative, reading the response out of the
+        # SDK's traceback, relied on SDK internals and was rejected.
         started = time.perf_counter()
         try:
-            response = self._client.messages.parse(**request)
+            message = self._client.messages.with_raw_response.create(**request).parse()
         except anthropic.APIError as exc:
             raise LLMProviderError(f"Anthropic API call failed: {exc}") from exc
-        except ValidationError as exc:
-            # The SDK validates the JSON against our Pydantic model while parsing, so it raises
-            # instead of returning the response. The tokens were billed all the same.
-            raise LLMOutputError(
-                f"model output does not match {schema.__name__}: {exc}",
-                usage=_usage_from_traceback(exc),
-                latency_ms=(time.perf_counter() - started) * 1000,
-            ) from exc
         latency_ms = (time.perf_counter() - started) * 1000
-        usage = _usage_of(response.usage)
+        usage = _usage_of(message.usage)
 
-        if response.stop_reason == "refusal":
+        # Order matters: a truncated or refused answer is not valid JSON, and the stop reason
+        # tells the true cause.
+        if message.stop_reason == "refusal":
             raise LLMOutputError("the model refused to answer", usage, latency_ms)
-        if response.stop_reason == "max_tokens":
+        if message.stop_reason == "max_tokens":
             raise LLMOutputError(f"output cut off at max_tokens={max_tokens}", usage, latency_ms)
-        output = response.parsed_output
-        if not isinstance(output, schema):
-            raise LLMOutputError(f"no parsed {schema.__name__} in the response", usage, latency_ms)
+        text = "".join(block.text for block in message.content if block.type == "text")
+        try:
+            output = schema.model_validate_json(text)
+        except ValidationError as exc:
+            raise LLMOutputError(
+                f"model output does not match {schema.__name__}: {exc}", usage, latency_ms
+            ) from exc
 
         return LLMResult(
             output=output,
@@ -104,6 +110,16 @@ class AnthropicClient:
             provider="anthropic",
             model=self._profile.model,
         )
+
+
+def output_format(schema: type[BaseModel]) -> dict[str, Any]:
+    """Build the JSON-schema output format exactly as the SDK's `parse()` builds it.
+
+    Why the key order (schema before type): the request body is serialized in dict order, and
+    the equality test with `parse()` compares bytes.
+    """
+    json_schema = TypeAdapter(schema).json_schema()
+    return {"schema": anthropic.transform_schema(json_schema), "type": "json_schema"}
 
 
 def _usage_of(sdk_usage: Any) -> Usage:
@@ -116,29 +132,3 @@ def _usage_of(sdk_usage: Any) -> Usage:
         # Earlier code folded them into input_tokens, which under-priced them.
         cache_creation_input_tokens=sdk_usage.cache_creation_input_tokens or 0,
     )
-
-
-def _usage_from_traceback(error: BaseException) -> Usage | None:
-    """Recover the usage of a response that the SDK failed to parse.
-
-    Why this exists: `messages.parse` downloads the response and parses it in one call. When the
-    JSON does not fit our schema it raises, and the response object is only still reachable as
-    the `response` argument of the SDK's parser frame in the traceback.
-
-    Design note: reading a frame variable depends on the SDK's internals, so it can stop working
-    after an SDK upgrade; then it returns None and the cost of that call is simply not counted
-    (a test and a live check catch this). The alternatives were rejected: calling the raw
-    `create` endpoint and parsing ourselves would change the request that every measurement was
-    made with, and an HTTP hook would add a second, hidden code path.
-
-    Returns:
-        The usage, or None if no response with a usage is found.
-    """
-    traceback = error.__traceback__
-    while traceback is not None:
-        candidate = traceback.tb_frame.f_locals.get("response")
-        sdk_usage = getattr(candidate, "usage", None)
-        if sdk_usage is not None and hasattr(sdk_usage, "input_tokens"):
-            return _usage_of(sdk_usage)
-        traceback = traceback.tb_next
-    return None

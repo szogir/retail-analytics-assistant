@@ -829,18 +829,36 @@ An independent review found five weaknesses. What changed and why:
   it is `definition`; both fail, so no score changes. `scoring_hash` stays `1056bb8f...`.
 - **Cost of unusable answers.** An answer that is refused, truncated or does not fit the schema
   was billed but its tokens were dropped. `LLMOutputError` now carries `usage` and `latency_ms`,
-  the pipeline prices them, and a failed retry call adds its tokens to the question's cost. The
-  SDK raises while parsing and does not hand over the response, so the adapter reads it from the
-  traceback frame of the SDK's parser (`_usage_from_traceback`). This depends on SDK internals and
-  falls back to "no usage" if it stops working. Live check on 2026-10-07 (one call, `claude_small`,
-  `max_tokens=40`, truncated JSON): usage recovered, 6,675 cache-creation and 40 output tokens,
-  about 0.0086 USD. Rejected: calling `create` and parsing ourselves, which would change the
-  request all measurements were made with. Earlier run files are not rewritten; costs of runs
-  from now on can be slightly higher where answers were unusable.
+  the pipeline prices them, and a failed retry call adds its tokens to the question's cost.
+  The SDK's `messages.parse()` raises on invalid JSON without handing over the response, so the
+  adapter now calls `messages.with_raw_response.create()` and validates the JSON with Pydantic
+  itself. A first version read the response out of the SDK's traceback; it was replaced because
+  it relied on SDK internals. **The request is unchanged:** `tests/test_anthropic_payload.py`
+  sends the old `parse()` call and the adapter's call through a fake HTTP transport and compares
+  the raw request bodies; they are byte-identical for both profiles (including the thinking
+  option). Only the SDK's own telemetry headers (`x-stainless-helper`, `x-stainless-raw-response`)
+  differ. One detail needed for byte equality: in the output format the key `schema` comes
+  before `type`, as the SDK builds it. A side effect: a truncated answer is now reported as
+  "output cut off at max_tokens" (it used to be "does not match", because the cut JSON is
+  invalid); the status is `invalid_output` in both cases, so no score changes. Live check on
+  2026-10-07: `max_tokens=40` gives the same usage as before (6,675 cache-creation and 40 output
+  tokens, about 0.0086 USD) with the right message; `pytest -m live` passes for both profiles
+  and a `claude_mid` question runs. Rejected: the traceback reading; and dropping the cost of
+  unusable answers (about 2 of 300 questions in the recorded runs). Earlier run files are not
+  rewritten; costs of runs from now on can be slightly higher where answers were unusable.
 - **Naming.** The latency shown is the time of the model call only, so panel and report now say
   "model latency".
 
-**Flaky test, not fixed.** `test_permission_references_agree_with_the_backend_and_forbidden_ones_differ`
-failed once in a full run and passed in every rerun (it compares unordered `fetchall()` results
-of the same query on two connections); the cause is probably row order, not the code of this
-decision.
+**Flaky test, fixed.** `test_permission_references_agree_with_the_backend_and_forbidden_ones_differ`
+failed in 1 of 20 isolated runs (before the fix) and once in a full run. Cause (from the failure
+output): the test compared floats with `==`, and the same query gave 19573.26846946602 on the
+user's connection and 19573.268469465904 on the full database. DuckDB sums in parallel and the two
+connections hold the rows in a different physical order, so the last digits differ. It was not
+row order. The test now uses the project's own table comparator (`compare_tables`, relative
+tolerance 1e-6, row order ignored unless the case says otherwise) for both assertions. After the
+fix the test passed 20 of 20 isolated runs, and the full suite is green; a failure in 1 of 20 is not
+proven away by 20 passes, so the evidence is the identified cause and the tolerance, not the count.
+
+**Checking discipline.** Commit `c9d7912` was made while a test was failing, because the check was
+piped through `tail` and the pipe hid the exit code. Checks now run with `set -o pipefail` or
+without a pipe, and the exit code is read before committing.
