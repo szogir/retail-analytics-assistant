@@ -709,8 +709,8 @@ comment and prices changed).
 records the request setting (`thinking: between_tools`) but no thinking blocks and no per-call token
 counts: the adapter keeps only the parsed output and the usage totals of each call, and the per-case
 rows store the cost, not the output tokens, so thinking tokens cannot be separated from answer
-tokens. What we have is the API's documented behaviour for `between_tools` without tools (no
-thinking). It is therefore **not proven** from our own data that the two profiles ran under
+tokens. What we have is the API's error message for `disabled` (it names `between_tools` as the way to
+turn thinking off), applied to calls without tools (no thinking). It is therefore **not proven** from our own data that the two profiles ran under
 identical conditions; the model comparison (Decision 20) stays diagnostic. A one-off live probe that
 prints `usage.output_tokens` and the content block types would settle it.
 
