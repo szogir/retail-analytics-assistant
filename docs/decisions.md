@@ -698,6 +698,22 @@ off") now matches the value, and the report header prints the thinking setting. 
 `models.yaml` changes `config_hash`, so runs made before and after this edit are not pairable
 (they would not be across models anyway).
 
+**Config hash on HEAD.** On HEAD the `config_hash` differs from the one recorded in Decision 15,
+because `models.yaml` gained the cache-write prices and the new comments. The confirmatory
+configuration is the `holdout-v1` git tag. The behaviour of `claude_small` did not change, only the
+cost calculation; `claude_mid` already had `thinking: between_tools` at `holdout-v1` (only its
+comment and prices changed).
+
+**Was thinking really off? Not proven.** The `claude_mid` run file
+(`evals/results/2026-10-06-model-comparison/20261006-195312-146163_semantic_claude_mid_validated.json`)
+records the request setting (`thinking: between_tools`) but no thinking blocks and no per-call token
+counts: the adapter keeps only the parsed output and the usage totals of each call, and the per-case
+rows store the cost, not the output tokens, so thinking tokens cannot be separated from answer
+tokens. What we have is the API's documented behaviour for `between_tools` without tools (no
+thinking). It is therefore **not proven** from our own data that the two profiles ran under
+identical conditions; the model comparison (Decision 20) stays diagnostic. A one-off live probe that
+prints `usage.output_tokens` and the content block types would settle it.
+
 ## Decision 19: the answer text of the CLI is a template, not a model summary (2026-10-06)
 
 `ask` prints the answer sentence, the result table and a "What was computed" panel
@@ -732,3 +748,6 @@ vs 97.5% (Sonnet 5.5); p50/p95 latency 4.6 / 7.3 s vs 4.9 / 8.3 s; cost per ques
 $0.0078 (about 2.8x; the whole run $0.84 vs $2.35); clarification rate 9.0% vs 8.0%; security 100%
 in both. Details and caveats: `evals/results/2026-10-06-model-comparison/comparison.md`. No paired
 analysis (the tool requires identical model and configuration; it was not loosened).
+
+The `claude_mid` thinking-off condition is not proven from stored data (see Decision 18); the
+`config_hash` on HEAD differs from Decision 15 for the reason given there.
