@@ -801,3 +801,46 @@ the quickstart of a fresh clone would not work.
 
 **Limit.** The tolerance is for CRLF/LF only. A file with other transformations (tabs, trailing
 spaces, encoding) is rejected, which is intended.
+
+## Decision 22: review fixes - honest panel, secure defaults, definitions, unusable-answer cost (2026-10-07)
+
+An independent review found five weaknesses. What changed and why:
+
+- **Panel.** The panel showed the metric definition next to the SQL, which suggested that the SQL
+  implements the definition. Nothing guarantees that. The two parts are now labelled "Metric named
+  by the model (catalogue definition, not the executed code)" and "SQL actually executed". A
+  heuristic check (`semantic/metric_check.py`, sqlglot) lists the columns the named metric needs
+  (from its expression and mandatory filters) and warns when the executed SQL does not reference
+  one of them. When nothing is missing it says only "found no missing element ... compares column
+  names only"; it never shows a tick. With no catalogue metric named the panel says "no catalogue
+  metric named, no check". Limit: it compares column names, not logic. Rejected: proving that the
+  SQL equals the definition (needs a canonical form for arbitrary SQL).
+- **Secure by default.** `ask(validate=True)` is the default, and `user` has no default in
+  `ask()` or in the CLI (`--user` is required). Without `users_path` the default call raises
+  instead of running unprotected. The eval runner passes `validate` explicitly, so the earlier
+  measurements are reproducible with `validate=False` / `--no-validator`.
+- **Definitions.** On the validated path, `intent == "definition"` with exactly one `metrics_used`
+  entry that equals a `metrics.yaml` name gives the new status `definition`: the answer is the
+  catalogue's text, no SQL runs, and the model's own SQL is ignored. Any other case keeps the old
+  behaviour. `SqlAnswer` is unchanged, so the `schema_hash` is unchanged. **Grading:** the frozen
+  `grade` and `grade_primary` treat every status other than the expected one as a failure; a test
+  checks that `definition` fails for every kind of case and that the security scoring gives it no
+  credit. A data question answered with a definition used to be `invalid_output` (no SQL), now
+  it is `definition`; both fail, so no score changes. `scoring_hash` stays `1056bb8f...`.
+- **Cost of unusable answers.** An answer that is refused, truncated or does not fit the schema
+  was billed but its tokens were dropped. `LLMOutputError` now carries `usage` and `latency_ms`,
+  the pipeline prices them, and a failed retry call adds its tokens to the question's cost. The
+  SDK raises while parsing and does not hand over the response, so the adapter reads it from the
+  traceback frame of the SDK's parser (`_usage_from_traceback`). This depends on SDK internals and
+  falls back to "no usage" if it stops working. Live check on 2026-10-07 (one call, `claude_small`,
+  `max_tokens=40`, truncated JSON): usage recovered, 6,675 cache-creation and 40 output tokens,
+  about 0.0086 USD. Rejected: calling `create` and parsing ourselves, which would change the
+  request all measurements were made with. Earlier run files are not rewritten; costs of runs
+  from now on can be slightly higher where answers were unusable.
+- **Naming.** The latency shown is the time of the model call only, so panel and report now say
+  "model latency".
+
+**Flaky test, not fixed.** `test_permission_references_agree_with_the_backend_and_forbidden_ones_differ`
+failed once in a full run and passed in every rerun (it compares unordered `fetchall()` results
+of the same query on two connections); the cause is probably row order, not the code of this
+decision.

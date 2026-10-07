@@ -73,7 +73,7 @@ Development suite, semantic mode, validator on, 300 questions per run.
 | | claude_small (Haiku 4.5) | claude_mid (Sonnet 5.5) |
 |---|---|---|
 | Primary accuracy | 89.6% | 97.5% |
-| Latency p50 / p95 | 4.6 s / 7.3 s | 4.9 s / 8.3 s |
+| Model latency p50 / p95 | 4.6 s / 7.3 s | 4.9 s / 8.3 s |
 | Cost per question | $0.0028 | $0.0078 |
 | Security cases passed | 100% | 100% |
 
@@ -200,14 +200,26 @@ uv run python -m retail_assistant.cli ask "What were the net sales last month?" 
 on 2026-10-03, so "last month" would soon point at months with no data. The evaluation uses the
 same fixed date (2026-10-04).
 
+`--user` is required: there is no default identity, so nobody gets someone else's permissions
+by forgetting it. The backend protection is on by default as well (`--no-validator` is the
+unprotected path that the earlier measurements used).
+
+The "What was computed" panel keeps two things apart: the **metric named by the model**
+(its definition comes from `semantic/metrics.yaml`) and the **SQL actually executed**. A
+heuristic check then looks for the columns the named metric needs (for example `vat_amount`)
+in the executed SQL and warns when one is missing. It compares column names only, so "no
+missing element" is not a proof that the SQL is right.
+
 Run the evaluation. The report is written to `evals/golden_set/artifacts/latest.md` (not versioned):
 
 ```bash
-uv run python -m retail_assistant.cli eval --mode semantic --profile claude_small
+uv run python -m retail_assistant.cli eval --mode semantic --profile claude_small --repetitions 3
 ```
 
-This calls the real API: about 1 USD per run with `claude_small` (300 questions; 0.83 to
-1.11 USD in the recorded runs).
+This calls the real API: 300 questions (50 cases, 2 languages, 3 repetitions), about 1 USD
+with `claude_small` (0.83 to 1.11 USD in the recorded runs). Without `--repetitions 3` it asks
+each question once (100 questions, about a third of that). The model latency in the report is
+the time of the model call only; validation and execution are not included.
 
 ### The database is reproducible
 
@@ -310,6 +322,13 @@ This is a demo, not a production system.
   compliant fake model. The security suite is self-written.
 - **Access control is one rule.** Users see a set of stores; there are no column-level or
   metric-level permissions, and prompt text itself is not protected.
+- **No authentication.** `--user` is a role choice on the command line, not a login. In a real
+  deployment the identity would come from single sign-on, and the backend layers would trust
+  only that.
+- **The result measures the whole semantic package.** The semantic mode adds metrics, business
+  rules, join paths and verified examples at once. The comparison shows what the package does,
+  not how much each part contributes; separating them would need ablation runs that were not
+  made.
 - **One model family.** Only Claude models were measured, and the model comparison is
   diagnostic, not confirmatory.
 

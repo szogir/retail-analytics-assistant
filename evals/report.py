@@ -440,9 +440,9 @@ def render_report(
             else []
         ),
         "",
-        "## Latency and cost",
+        "## Model latency and cost",
         "",
-        f"- Latency p50: {p50:.0f} ms, p95: {p95:.0f} ms",
+        f"- Model latency p50: {p50:.0f} ms, p95: {p95:.0f} ms",
         f"- Cost per question: ${total_cost / total if total else 0:.5f}",
         f"- Total cost of the run: ${total_cost:.4f}",
         "",

@@ -1,8 +1,11 @@
 # Demo script
 
 Five scenes for a short screen recording, all with the real CLI. Every command was run on
-2026-10-07 with `claude_small`; the answers below are what it printed. Model output can vary a
+2026-10-07 with `claude_small` (scene 1 again after the panel changes of Decision 22); the
+answers below are what it printed. Model output can vary a
 little between runs, so the numbers should be read from the screen, not from this page.
+
+`--user` is required (there is no default identity).
 
 Setup: `uv sync`, `uv run python -m data_gen.generate`, and `ANTHROPIC_API_KEY` in `.env`.
 `--as-of 2026-10-04` fixes what "today" means (the data ends on 2026-10-03), so "last month" is
@@ -14,9 +17,14 @@ always September 2026. Total cost of the whole demo: about 5 cents.
 uv run python -m retail_assistant.cli ask "What were the net sales last month?" --user anna --lang en --mode semantic --as-of 2026-10-04
 ```
 
-Shows: `Net sales (EUR): 21,741.44`, the SQL, the metric definition from the semantic layer, the
-stated assumptions, latency and cost. The panel says `User: anna (regions 3)` and
+Shows: `Net sales (EUR): 21,741.44`, then the panel. The panel keeps two things apart: **SQL
+actually executed** and **Metric named by the model** (its definition from the semantic layer, not
+the executed code), followed by a heuristic check (`found no missing element ... compares column
+names only`), the stated assumptions, **model latency** and cost. The panel says `User: anna (regions 3)` and
 `Validator: passed; ran on the user's own filtered connection`.
+
+To see the warning when the executed SQL leaves out something the metric needs (no VAT column),
+run the offline test: `uv run pytest tests/test_metric_check.py -q`.
 
 ## 2. Carla: all stores, the same question
 

@@ -124,3 +124,23 @@ gh release create data-v1 data\retail.duckdb --title "Synthetic retail database"
 - Update the sealed-boundary rules: `CLAUDE.md` section 5 and the read-deny rules in
   `.claude/settings.json` still forbid any access to the held-out suite and must be revised
   before anyone works with the published copy.
+
+## Continuous integration after publication (do later, not now)
+
+After the publication commit, the CI should check the commitment on every push. Run, after
+generating the database, `uv run python -m evals.validate_suite --suite holdout --verify
+--holdout-dir evals/holdout_published`, and the held-out tests on that folder. Note the current
+workflow runs plain `uv run pytest`; use `-m "not live and not review"` there and let the holdout
+tests find the published folder.
+
+**Platform caveat.** The CI runs on Linux (`ubuntu-latest`). The byte-identical rebuild of
+`data/retail.duckdb` (SHA-256 `741bd4c1...`) was verified on Windows only. If the database hash
+differs on the first CI run, there are two ways, to be decided then:
+
+1. Download the database from the GitHub Release attachment (step 5 above) and verify its
+   SHA-256 in the CI; the commitment is then checked against the published database itself.
+2. A separate, clearly labelled verification mode that checks only the case files and the
+   oracle against the manifest (their raw bytes), and says in its output that the database
+   identity was not verified.
+
+Neither is implemented. Do not weaken `verify_commitment` for this: it stays byte-strict.
