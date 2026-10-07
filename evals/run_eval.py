@@ -321,7 +321,13 @@ def main(
     if suite == "holdout":
         manifest_hash = verify_commitment(directory, settings.db_path)
     elif suite == "development":
-        require_frozen(directory, cases, settings.db_path)
+        normalized = require_frozen(directory, cases, settings.db_path)
+        if normalized:
+            # The frozen hashes were taken on CRLF files; say so instead of passing silently.
+            typer.echo(
+                f"Frozen files verified with line-ending normalization: {len(normalized)} files "
+                "(content identical, see Decision 21)."
+            )
     if suite == "holdout" and (limit or lang != "both" or repetitions != 3):
         raise typer.BadParameter(
             "Final holdout runs require both languages, no limit, 3 repetitions"

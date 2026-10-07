@@ -766,3 +766,36 @@ analysis (the tool requires identical model and configuration; it was not loosen
 
 The `claude_mid` thinking-off condition is not proven from stored data (see Decision 18); the
 `config_hash` on HEAD differs from Decision 15 for the reason given there.
+
+## Decision 21: line-ending tolerant check of the frozen development files (2026-10-07)
+
+**Problem.** The fresh-clone trial (2026-10-07) showed that `run_eval --suite development` fails in
+a new clone with "Frozen YAML files have changed". `frozen.json` records the SHA-256 of the raw
+bytes of the case files, `oracles.py`, `legacy_oracles.py` and `reference_tools.py`. Those hashes
+were taken on a Windows checkout (CRLF), but git stores LF (`.gitattributes`: `eol=lf`), so no
+clone can reproduce them although the content is identical (`case_hash` and the database hash
+matched). Unit tests did not notice, because they build their own temporary files.
+
+**Chosen solution (D).** `provenance.matches_recorded_hash` compares the raw bytes first. If that
+fails, the file is brought to the canonical CRLF form (every CRLF to LF, then every LF to CRLF) and
+hashed again. A match then is accepted, and `require_frozen` returns the names of such files; the
+eval prints "verified with line-ending normalization". Any other difference still fails, including
+a changed content byte in an LF file and a mixed-ending file that differs even in canonical form.
+Tests: CRLF file passes in an LF checkout; one changed content byte fails; a mixed-ending file
+that does not match in canonical form fails; the holdout verification is not tolerant.
+
+**Holdout unchanged.** `verify_commitment` and `build_commitment` still compare raw bytes only; the
+published holdout is kept byte-identical with `.gitattributes` (`-text`). Tolerance there would
+let a changed sealed file pass.
+
+**Frozen artefacts are byte-for-byte unchanged:** `frozen.json`, `candidate.json`, the case files,
+the oracles, `holdout_manifest.json`. There is no re-freeze.
+
+**Rejected alternatives.** (A) *Line-ending-independent hashing plus a re-freeze*: it would rewrite
+a frozen artefact, and the shared `file_hash` also underlies the holdout commitment, which must not
+move. (B) *`-text` on the golden set and committing CRLF bytes*: a repository with CRLF files on
+every platform, and still fragile against any editor or autocrlf setting. (C) *Documentation only*:
+the quickstart of a fresh clone would not work.
+
+**Limit.** The tolerance is for CRLF/LF only. A file with other transformations (tabs, trailing
+spaces, encoding) is rejected, which is intended.

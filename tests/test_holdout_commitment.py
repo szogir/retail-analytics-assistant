@@ -132,3 +132,15 @@ def test_report_prints_manifest_digest_and_verification_state(verified: bool, la
     text = render_report(info, [], None, 0)
     assert "abc123" in text
     assert f"Holdout verified: {label}" in text
+
+
+def test_holdout_verification_stays_byte_strict(invented_suite: tuple[Path, Path, Path]) -> None:
+    """A line-ending change must fail the holdout check: only the development suite is tolerant."""
+    private, database, manifest = invented_suite
+    case_file = private / "901_case.yaml"
+    case_file.write_bytes(case_file.read_bytes().replace(b"\n", b"\r\n"))
+    write_commitment(private, database, manifest)
+    verify_commitment(private, database, manifest)  # identical bytes pass
+    case_file.write_bytes(case_file.read_bytes().replace(b"\r\n", b"\n"))
+    with pytest.raises(ValueError, match="mismatch"):
+        verify_commitment(private, database, manifest)

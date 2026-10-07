@@ -353,3 +353,52 @@ def test_confirmatory_analysis_requires_all_recorded_data_cases(
     else:
         with pytest.raises(ValueError, match="every recorded data case"):
             main()
+
+
+def _frozen_fixture(tmp_path: Path, case_bytes: bytes) -> tuple[Path, GoldenCase, Path]:
+    """A frozen manifest recorded from `case_bytes`, written the way the freeze did."""
+    case = load_golden_set()[0].model_copy(
+        update={"reviewed": True, "reviewed_on": dt.date(2026, 10, 4), "reviewed_by": "Owner"}
+    )
+    db = tmp_path / "database.bin"
+    db.write_bytes(b"fixed database content")
+    oracle = tmp_path / "oracles.py"
+    oracle.write_bytes(b"# placeholder\n")
+    case_file = tmp_path / "001.yaml"
+    case_file.write_bytes(case_bytes)
+    manifest = {
+        "status": "frozen",
+        "reference_cases_checked": [case.id],
+        "case_hash": case_hash([case]),
+        "case_count": 1,
+        "database_hash": file_hash(db),
+        "files": {case_file.name: file_hash(case_file)},
+        "oracle_hash": file_hash(oracle),
+        "reference_tools_hash": file_hash(GOLDEN_SET_DIR.parent / "reference_tools.py"),
+    }
+    (tmp_path / "frozen.json").write_text(json.dumps(manifest))
+    return db, case, case_file
+
+
+CRLF_CASE = b"id: 1\r\nquestion: net sales\r\n"
+
+
+def test_crlf_frozen_file_passes_in_an_lf_checkout(tmp_path: Path) -> None:
+    db, case, case_file = _frozen_fixture(tmp_path, CRLF_CASE)
+    assert require_frozen(tmp_path, [case], db) == []  # untouched bytes: plain match
+    case_file.write_bytes(CRLF_CASE.replace(b"\r\n", b"\n"))  # what git checks out
+    assert require_frozen(tmp_path, [case], db) == ["001.yaml"]  # passes, and says so
+
+
+def test_one_changed_content_byte_fails_even_with_lf_endings(tmp_path: Path) -> None:
+    db, case, case_file = _frozen_fixture(tmp_path, CRLF_CASE)
+    case_file.write_bytes(b"id: 1\nquestion: net sales!\n")
+    with pytest.raises(ValueError, match="YAML"):
+        require_frozen(tmp_path, [case], db)
+
+
+def test_mixed_line_endings_that_differ_after_normalization_fail(tmp_path: Path) -> None:
+    db, case, case_file = _frozen_fixture(tmp_path, CRLF_CASE)
+    case_file.write_bytes(b"id: 1\r\nquestion: net sales\n\n")  # extra blank line
+    with pytest.raises(ValueError, match="YAML"):
+        require_frozen(tmp_path, [case], db)
