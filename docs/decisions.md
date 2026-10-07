@@ -714,6 +714,21 @@ thinking). It is therefore **not proven** from our own data that the two profile
 identical conditions; the model comparison (Decision 20) stays diagnostic. A one-off live probe that
 prints `usage.output_tokens` and the content block types would settle it.
 
+**Probe result (2026-10-07).** Three live calls, profile `claude_mid`, semantic prompt, same request
+as the eval (including `thinking: between_tools`), `max_tokens` 4096. The questions were
+development-style questions close to cases 001, 004 and 006 (not holdout questions):
+
+| question | content block types | thinking block | `usage.output_tokens` |
+|---|---|---|---|
+| net sales in euro by country, fiscal year 2025 | `text` | no | 559 |
+| average basket in Hungary | `text` | no | 567 |
+| weekday with the highest net sales | `text` | no | 529 |
+
+3 probe calls had no thinking block; strong signal, not complete proof; the comparison stays
+diagnostic. The output token counts (about 530-570) are the size of the structured JSON answer
+itself, which points the same way, but one cannot subtract an unknown from them, so it is a hint,
+not a proof. The probe script was a throwaway and is not in the repository.
+
 ## Decision 19: the answer text of the CLI is a template, not a model summary (2026-10-06)
 
 `ask` prints the answer sentence, the result table and a "What was computed" panel
