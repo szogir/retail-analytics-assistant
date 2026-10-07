@@ -35,6 +35,7 @@ def run(fake: FakeLLMClient, db: Path, user: str = "carla") -> Answer:
         db_path=db,
         prompts_dir=PROMPTS_DIR,
         as_of=AS_OF,
+        validate=False,  # these tests cover the original path, which must stay unchanged
     )
 
 

@@ -292,6 +292,7 @@ def test_retry_needs_the_backend_layers(full_db_path: Path) -> None:
             db_path=full_db_path,
             prompts_dir=PROMPTS_DIR,
             as_of=AS_OF,
+            validate=False,
             retry=True,
         )
 
@@ -304,3 +305,42 @@ def test_first_status_records_the_first_attempt_even_after_a_retry(full_db_path:
     assert (fixed.first_status, fixed.status) == ("blocked", "answered")
     plain = run_scripted(FakeLLMClient(responses=[sql_answer("SELECT 1")]), full_db_path)
     assert (plain.first_status, plain.status) == ("answered", "answered")
+
+
+def test_the_default_call_validates_and_blocks_forbidden_sql(full_db_path: Path) -> None:
+    """Secure by default: no `validate` argument means validator + the user's connection."""
+    answer = ask(
+        "any question",
+        "anna",
+        "en",
+        "naive",
+        llm=model_says("SELECT * FROM raw.fact_sales"),
+        profile=PROFILE,
+        db_path=full_db_path,
+        prompts_dir=PROMPTS_DIR,
+        as_of=AS_OF,
+        users_path=USERS_PATH,
+    )
+    assert answer.status == "blocked"
+
+
+def test_the_default_call_refuses_to_run_without_the_users_file(full_db_path: Path) -> None:
+    with pytest.raises(ValueError, match="users_path"):
+        ask(
+            "any question",
+            "carla",
+            "en",
+            "naive",
+            llm=model_says("SELECT 1"),
+            profile=PROFILE,
+            db_path=full_db_path,
+            prompts_dir=PROMPTS_DIR,
+            as_of=AS_OF,
+        )
+
+
+def test_the_user_argument_has_no_default() -> None:
+    import inspect
+
+    parameter = inspect.signature(ask).parameters["user"]
+    assert parameter.default is inspect.Parameter.empty

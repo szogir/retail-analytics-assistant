@@ -117,7 +117,7 @@ def ask(
     prompts_dir: Path,
     as_of: dt.date,
     semantic_dir: Path | None = None,
-    validate: bool = False,
+    validate: bool = True,
     users_path: Path | None = None,
     retry: bool = False,
 ) -> Answer:
@@ -135,17 +135,19 @@ def ask(
         prompts_dir: Folder with the versioned prompt files.
         as_of: What "today" means for relative dates such as "last month".
         semantic_dir: Folder with the semantic layer files; needed for the "semantic" mode.
-        validate: True = backend protection on: validator, then execution on the user's own
-            filtered connection. False = the original path, kept for reproducible measurements.
+        validate: True (default) = backend protection on: validator, then execution on the
+            user's own filtered connection. False = the original unprotected path, kept only so
+            that earlier measurements stay reproducible; callers must ask for it explicitly.
         users_path: `users.yaml`; required when `validate` is True.
         retry: True = after a "sql_error" or "blocked" result, ask the model once more with
             the error text. Needs `validate=True`. Default False, so earlier runs stay
             reproducible.
 
-    Why `validate` defaults to False: the eval runner and the existing measurements were made
-    without the backend layers, and a silent default change would make runs incomparable. The
-    CLI and every run that claims backend protection pass True explicitly, and the run info
-    records it.
+    Why `validate` defaults to True (secure by default): a caller that forgets the argument
+    gets the protected path, never the unprotected one. The eval runner passes the flag
+    explicitly and records it in the run info, so the measurements made on the old path stay
+    reproducible with `validate=False`. `user` has no default either: the caller must say whose
+    permissions apply. Without `users_path` the protected path raises instead of running.
 
     Returns:
         An `Answer`. Model and SQL failures do not raise; they become a status, because the

@@ -418,6 +418,7 @@ def test_the_pipeline_sends_the_semantic_prompt(tiny_db: Path) -> None:
         prompts_dir=PROMPTS_DIR,
         as_of=dt.date(2026, 10, 4),
         semantic_dir=SEMANTIC_DIR,
+        validate=False,
     )
     assert result.status == "answered"
     assert result.prompt_version == "sql_semantic_v1"

@@ -78,7 +78,7 @@ def test_the_answer_figure_comes_from_the_table_and_metrics_are_resolved_exactly
     use_fake,  # type: ignore[no-untyped-def]
 ) -> None:
     use_fake(answer(sql="SELECT 41.5 AS x", metrics_used=["Net Sales", "net_sales_eur"]))
-    output = ask_cli("q")
+    output = ask_cli("q", "--user", "carla")
     # One value, named after the single exactly matching metric; the figure is the table's.
     assert "Net sales (EUR): 41.50" in output
     # The loose name is shown as text and labelled, never mapped to a definition.
@@ -108,22 +108,24 @@ def test_a_blocked_statement_shows_the_rule_and_was_not_run(use_fake) -> None:  
 
 def test_clarification_and_refusal_are_readable(use_fake) -> None:  # type: ignore[no-untyped-def]
     use_fake(answer(needs_clarification=True, clarification_question="Which month?"))
-    assert "I need one more detail before I can answer: Which month?" in ask_cli("sales?")
+    assert "I need one more detail before I can answer: Which month?" in ask_cli(
+        "sales?", "--user", "carla"
+    )
     use_fake(answer(intent="out_of_scope", approach="that is a write request"))
-    refusal = ask_cli("delete the data")
+    refusal = ask_cli("delete the data", "--user", "carla")
     assert "I cannot answer this question. The model's reason: that is a write request" in refusal
 
 
 def test_hungarian_labels_and_number_format(use_fake) -> None:  # type: ignore[no-untyped-def]
     use_fake(answer(sql="SELECT 1234567.5 AS x", metrics_used=["net_sales_eur"], language="hu"))
-    output = ask_cli("Mennyi volt a nettó árbevétel?", "--lang", "hu")
+    output = ask_cli("Mennyi volt a nettó árbevétel?", "--user", "carla", "--lang", "hu")
     assert "Nettó árbevétel (EUR): 1 234 567,50" in output
     assert "Mit számoltunk" in output
 
 
 def test_retry_is_off_by_default_and_the_validator_is_on(use_fake) -> None:  # type: ignore[no-untyped-def]
     fake = use_fake(answer(sql="SELECT nope FROM fact_sales"))
-    output = ask_cli("q")
+    output = ask_cli("q", "--user", "carla")
     assert len(fake.calls) == 1  # no second call: retry is off
     assert "could not be run" in output
 
@@ -184,3 +186,10 @@ def test_the_holdout_suite_cannot_be_started_from_the_cli(monkeypatch: pytest.Mo
     assert result.exit_code != 0
     assert "only the development and security suites" in result.output
     assert "holdout-dir" not in runner.invoke(cli.app, ["eval", "--help"]).output
+
+
+def test_the_user_option_is_required() -> None:
+    """No default user: the caller must say whose permissions apply."""
+    result = runner.invoke(cli.app, ["ask", "q"])
+    assert result.exit_code == 2
+    assert "--user" in result.output

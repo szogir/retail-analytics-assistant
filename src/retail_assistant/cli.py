@@ -54,7 +54,7 @@ def build_llm(settings: Settings, profile: str) -> LLMSetup:
 @app.command("ask")
 def ask_command(
     question: Annotated[str, typer.Argument(help="the business question")],
-    user: Annotated[str, typer.Option(help="who asks: a name from config/users.yaml")] = "carla",
+    user: Annotated[str, typer.Option(help="who asks: a name from config/users.yaml")],
     lang: Annotated[str, typer.Option(help="language of the question: en or hu")] = "en",
     mode: Annotated[str, typer.Option(help="naive, commented or semantic")] = "semantic",
     profile: Annotated[str, typer.Option(help="profile from config/models.yaml")] = "",
