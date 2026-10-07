@@ -120,3 +120,45 @@ def test_api_failures_are_provider_errors(small: ModelProfile) -> None:
     error = anthropic.APIConnectionError(request=request)
     with pytest.raises(LLMProviderError):
         make_client(StubMessages(error=error), small).generate("s", "u", SqlAnswer)
+
+
+def test_usage_of_a_response_that_does_not_fit_the_schema_is_still_recorded(
+    small: ModelProfile,
+) -> None:
+    """The SDK raises while parsing; the billed tokens must survive in the error."""
+
+    class ParsingMessages:
+        def parse(self, **request: Any) -> Any:
+            def sdk_parser(response: Any) -> Any:  # mimics the SDK frame that holds the response
+                SqlAnswer.model_validate({"language": "de"})
+                return response
+
+            return sdk_parser(response(parsed=None))
+
+    with pytest.raises(LLMOutputError, match="does not match") as caught:
+        make_client(ParsingMessages(), small).generate("s", "u", SqlAnswer)  # type: ignore[arg-type]
+    usage = caught.value.usage
+    assert usage is not None
+    assert (usage.input_tokens, usage.output_tokens) == (100, 40)
+    assert usage.cache_creation_input_tokens == 10 and usage.cached_input_tokens == 500
+    assert caught.value.latency_ms >= 0
+
+
+@pytest.mark.parametrize("stop_reason", ["refusal", "max_tokens"])
+def test_refused_and_truncated_calls_keep_their_usage(
+    small: ModelProfile, stop_reason: str
+) -> None:
+    messages = StubMessages(response(stop_reason=stop_reason))
+    with pytest.raises(LLMOutputError) as caught:
+        make_client(messages, small).generate("s", "u", SqlAnswer)
+    assert caught.value.usage is not None and caught.value.usage.output_tokens == 40
+
+
+def test_without_a_recoverable_response_the_usage_is_none(small: ModelProfile) -> None:
+    try:
+        SqlAnswer.model_validate({"language": "de"})
+    except ValidationError as exc:
+        error = exc
+    with pytest.raises(LLMOutputError) as caught:
+        make_client(StubMessages(error=error), small).generate("s", "u", SqlAnswer)
+    assert caught.value.usage is None

@@ -196,10 +196,14 @@ def ask(
             max_tokens=MAX_OUTPUT_TOKENS,
         )
     except LLMOutputError as exc:
+        # The tokens of an unusable answer were billed, so they are recorded and priced.
         return Answer(
             "invalid_output",
             question,
             message=str(exc),
+            usage=exc.usage,
+            latency_ms=exc.latency_ms,
+            cost_usd=profile.cost_usd(exc.usage) if exc.usage else 0.0,
             prompt_version=version,
             first_status="invalid_output",
         )
@@ -217,6 +221,8 @@ def ask(
     first = generated
     first_status = outcome.status
     retried = False
+    wasted_usage: Usage | None = None  # tokens of a retry call whose output was unusable
+    wasted_latency_ms = 0.0
     if retry and outcome.status in RETRYABLE:
         # Design note: exactly one retry, and only for failures the model can plausibly fix
         # from the error text (a SQL error or a validator rule). Clarifications, refusals and
@@ -231,13 +237,16 @@ def ask(
                 SqlAnswer,
                 max_tokens=MAX_OUTPUT_TOKENS,
             )
-        except LLMError:
+        except LLMError as exc:
             second = None  # keep the first outcome; the failed retry still counts as a retry
+            if isinstance(exc, LLMOutputError) and exc.usage is not None:
+                wasted_usage, wasted_latency_ms = exc.usage, exc.latency_ms
         if second is not None:
             # The retried SQL goes through the same judge: validator, user connection, executor.
             outcome = _judge(second.output, access, db_path, catalogue)
             generated = _combine(first, second)
 
+    total_usage = generated.usage.plus(wasted_usage) if wasted_usage else generated.usage
     return Answer(
         status=outcome.status,
         question=question,
@@ -245,9 +254,9 @@ def ask(
         sql=outcome.sql,
         result=outcome.result,
         model_answer=generated.output,
-        usage=generated.usage,
-        latency_ms=generated.latency_ms,
-        cost_usd=profile.cost_usd(generated.usage),
+        usage=total_usage,
+        latency_ms=generated.latency_ms + wasted_latency_ms,
+        cost_usd=profile.cost_usd(total_usage),
         prompt_version=version,
         blocked_rules=outcome.blocked_rules,
         retried=retried,
@@ -258,13 +267,7 @@ def ask(
 
 def _combine(first: LLMResult[SqlAnswer], second: LLMResult[SqlAnswer]) -> LLMResult[SqlAnswer]:
     """Merge two calls: the second output, but tokens and latency of both (cost is honest)."""
-    usage = Usage(
-        input_tokens=first.usage.input_tokens + second.usage.input_tokens,
-        output_tokens=first.usage.output_tokens + second.usage.output_tokens,
-        cached_input_tokens=first.usage.cached_input_tokens + second.usage.cached_input_tokens,
-        cache_creation_input_tokens=first.usage.cache_creation_input_tokens
-        + second.usage.cache_creation_input_tokens,
-    )
+    usage = first.usage.plus(second.usage)
     return replace(second, usage=usage, latency_ms=first.latency_ms + second.latency_ms)
 
 

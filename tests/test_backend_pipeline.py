@@ -344,3 +344,35 @@ def test_the_user_argument_has_no_default() -> None:
 
     parameter = inspect.signature(ask).parameters["user"]
     assert parameter.default is inspect.Parameter.empty
+
+
+def test_an_unusable_model_answer_is_still_priced(full_db_path: Path) -> None:
+    from retail_assistant.llm.base import LLMOutputError, Usage
+
+    usage = Usage(input_tokens=1000, output_tokens=200, cache_creation_input_tokens=300)
+    fake = FakeLLMClient(responses=[LLMOutputError("cut off", usage, latency_ms=1234.0)])
+    answer = run_scripted(fake, full_db_path, retry=False)
+    assert answer.status == "invalid_output"
+    assert answer.usage == usage and answer.latency_ms == 1234.0
+    assert answer.cost_usd == pytest.approx(PROFILE.cost_usd(usage)) and answer.cost_usd > 0
+
+
+def test_a_retry_with_an_unusable_answer_adds_its_cost_to_the_first_call(
+    full_db_path: Path,
+) -> None:
+    from retail_assistant.llm.base import LLMOutputError, Usage
+
+    first = SqlAnswer.model_validate(
+        {
+            "language": "en",
+            "intent": "metric_query",
+            "approach": "x",
+            "sql": "SELECT nope FROM dim_store",
+        }
+    )
+    wasted = Usage(input_tokens=500, output_tokens=100)
+    fake = FakeLLMClient(responses=[first, LLMOutputError("cut off", wasted, latency_ms=50.0)])
+    answer = run_scripted(fake, full_db_path, retry=True)
+    assert answer.status == "sql_error" and answer.retried
+    assert answer.usage is not None and answer.usage.input_tokens >= 500
+    assert answer.cost_usd > PROFILE.cost_usd(wasted)

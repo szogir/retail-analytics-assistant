@@ -79,30 +79,66 @@ class AnthropicClient:
         except anthropic.APIError as exc:
             raise LLMProviderError(f"Anthropic API call failed: {exc}") from exc
         except ValidationError as exc:
-            # The SDK validates the JSON against our Pydantic model while parsing.
-            raise LLMOutputError(f"model output does not match {schema.__name__}: {exc}") from exc
+            # The SDK validates the JSON against our Pydantic model while parsing, so it raises
+            # instead of returning the response. The tokens were billed all the same.
+            raise LLMOutputError(
+                f"model output does not match {schema.__name__}: {exc}",
+                usage=_usage_from_traceback(exc),
+                latency_ms=(time.perf_counter() - started) * 1000,
+            ) from exc
         latency_ms = (time.perf_counter() - started) * 1000
+        usage = _usage_of(response.usage)
 
         if response.stop_reason == "refusal":
-            raise LLMOutputError("the model refused to answer")
+            raise LLMOutputError("the model refused to answer", usage, latency_ms)
         if response.stop_reason == "max_tokens":
-            raise LLMOutputError(f"output cut off at max_tokens={max_tokens}")
+            raise LLMOutputError(f"output cut off at max_tokens={max_tokens}", usage, latency_ms)
         output = response.parsed_output
         if not isinstance(output, schema):
-            raise LLMOutputError(f"no parsed {schema.__name__} in the response")
+            raise LLMOutputError(f"no parsed {schema.__name__} in the response", usage, latency_ms)
 
-        usage = response.usage
         return LLMResult(
             output=output,
-            usage=Usage(
-                input_tokens=usage.input_tokens,
-                output_tokens=usage.output_tokens,
-                cached_input_tokens=usage.cache_read_input_tokens or 0,
-                # Design note: cache writes have their own price (1.25x input for the 5-minute
-                # cache). Earlier code folded them into input_tokens, which under-priced them.
-                cache_creation_input_tokens=usage.cache_creation_input_tokens or 0,
-            ),
+            usage=usage,
             latency_ms=latency_ms,
             provider="anthropic",
             model=self._profile.model,
         )
+
+
+def _usage_of(sdk_usage: Any) -> Usage:
+    """Convert the SDK's usage object into our `Usage`."""
+    return Usage(
+        input_tokens=sdk_usage.input_tokens,
+        output_tokens=sdk_usage.output_tokens,
+        cached_input_tokens=sdk_usage.cache_read_input_tokens or 0,
+        # Design note: cache writes have their own price (1.25x input for the 5-minute cache).
+        # Earlier code folded them into input_tokens, which under-priced them.
+        cache_creation_input_tokens=sdk_usage.cache_creation_input_tokens or 0,
+    )
+
+
+def _usage_from_traceback(error: BaseException) -> Usage | None:
+    """Recover the usage of a response that the SDK failed to parse.
+
+    Why this exists: `messages.parse` downloads the response and parses it in one call. When the
+    JSON does not fit our schema it raises, and the response object is only still reachable as
+    the `response` argument of the SDK's parser frame in the traceback.
+
+    Design note: reading a frame variable depends on the SDK's internals, so it can stop working
+    after an SDK upgrade; then it returns None and the cost of that call is simply not counted
+    (a test and a live check catch this). The alternatives were rejected: calling the raw
+    `create` endpoint and parsing ourselves would change the request that every measurement was
+    made with, and an HTTP hook would add a second, hidden code path.
+
+    Returns:
+        The usage, or None if no response with a usage is found.
+    """
+    traceback = error.__traceback__
+    while traceback is not None:
+        candidate = traceback.tb_frame.f_locals.get("response")
+        sdk_usage = getattr(candidate, "usage", None)
+        if sdk_usage is not None and hasattr(sdk_usage, "input_tokens"):
+            return _usage_of(sdk_usage)
+        traceback = traceback.tb_next
+    return None

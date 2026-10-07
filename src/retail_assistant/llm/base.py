@@ -33,7 +33,19 @@ class LLMOutputError(LLMError):
 
     Why a separate type: the eval report shows an "invalid output rate", and it must not be
     mixed up with infrastructure problems.
+
+    Why it carries usage and latency: the provider bills the tokens of an unusable answer too.
+    Dropping them would make the cost of a run look lower than what was paid.
+
+    Attributes:
+        usage: Token counts of the unusable call, None if the provider's response was lost.
+        latency_ms: Wall-clock time of the call.
     """
+
+    def __init__(self, message: str, usage: "Usage | None" = None, latency_ms: float = 0.0) -> None:
+        super().__init__(message)
+        self.usage = usage
+        self.latency_ms = latency_ms
 
 
 @dataclass(frozen=True)
@@ -52,6 +64,16 @@ class Usage:
     output_tokens: int
     cached_input_tokens: int = 0
     cache_creation_input_tokens: int = 0
+
+    def plus(self, other: "Usage") -> "Usage":
+        """Return the token counts of both calls added up."""
+        return Usage(
+            input_tokens=self.input_tokens + other.input_tokens,
+            output_tokens=self.output_tokens + other.output_tokens,
+            cached_input_tokens=self.cached_input_tokens + other.cached_input_tokens,
+            cache_creation_input_tokens=self.cache_creation_input_tokens
+            + other.cache_creation_input_tokens,
+        )
 
 
 @dataclass(frozen=True)
