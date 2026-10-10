@@ -32,5 +32,24 @@ jobs:
       - name: Type check
         run: uv run mypy
 
+      # Design note: the seeded generator is byte-identical on Windows but gives a
+      # different SHA-256 on Linux, so regenerating here could never match the
+      # commitment. We download the published database instead and check the
+      # commitment against that exact file. The rejected alternative, a weaker mode
+      # that skips the database hash, would verify less (docs/holdout_publication.md).
+      - name: Download the committed database
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download data-v1 --pattern retail.duckdb --dir data
+          echo "741bd4c18d8f81433565e2cd96edfe5751283f914753583fdbb82a91188df965  data/retail.duckdb" | sha256sum --check
+
+      - name: Verify the published holdout against its commitment
+        run: uv run python -m evals.validate_suite --suite holdout --verify --holdout-dir evals/holdout_published
+
+      # Unit tests build their own database; the holdout-marked tests run on the
+      # published copy, which is why HOLDOUT_DIR points into the checkout here.
       - name: Unit tests
-        run: uv run pytest
+        env:
+          HOLDOUT_DIR: ${{ github.workspace }}/evals/holdout_published
+        run: uv run pytest -m "not live and not review"

@@ -223,7 +223,8 @@ the time of the model call only; validation and execution are not included.
 
 ### The database is reproducible
 
-The generator is seeded, so the database is byte-identical on every run. Check it:
+The generator is seeded, so the database is byte-identical on every run on the same
+platform. Check it:
 
 ```bash
 # Linux / macOS / Git Bash
@@ -233,9 +234,10 @@ sha256sum data/retail.duckdb
 ```
 
 Expected: `741bd4c18d8f81433565e2cd96edfe5751283f914753583fdbb82a91188df965`. This was
-verified in a fresh clone on Windows with DuckDB 1.5.6. If the digest differs on another
-platform or DuckDB version, the database from the GitHub Release (*pending*, with the same
-SHA-256) is the fallback. Do not regenerate it between a held-out freeze and the final run:
+verified in a fresh clone on Windows with DuckDB 1.5.6. On Linux the same generator and
+DuckDB version give a different digest, so the byte-identical rebuild holds on Windows only.
+On other platforms use the database from the GitHub Release (*pending*, with the same
+SHA-256); the CI downloads that file. Do not regenerate it between a held-out freeze and the final run:
 its hash is part of the commitment.
 
 ## Reproducing the numbers
@@ -285,14 +287,20 @@ Operational details: [docs/evaluation.md](docs/evaluation.md).
 4. **Frozen before the run.** The configuration of the confirmatory run is the git tag
    `holdout-v1`.
 
-**Verifying the commitment.** Publication of the held-out cases and run files is *pending*
-(see [docs/holdout_publication.md](docs/holdout_publication.md)). Once published, anyone
-can check that the published bytes are the ones committed to, with the database regenerated
-as above:
+**Verifying the commitment.** The held-out cases and `oracles.py` are published
+byte-identical in [`evals/holdout_published/`](evals/holdout_published/), the run files and
+reports in [`evals/results/2026-10-05-holdout/`](evals/results/2026-10-05-holdout/)
+(commit `7c33b49`; procedure in [docs/holdout_publication.md](docs/holdout_publication.md)).
+Anyone can check that these are the bytes the manifest committed to, with the database from
+the section above:
 
 ```bash
-uv run python -m evals.validate_suite --suite holdout --verify --holdout-dir <published folder>
+uv run python -m evals.validate_suite --suite holdout --verify --holdout-dir evals/holdout_published
+# expected last line: holdout: manifest_sha256=91b689f8...; verified: yes
 ```
+
+The CI runs the same check on every push. The suite is spent: it now serves as public
+regression data, not as an unseen test.
 
 ## Limitations
 

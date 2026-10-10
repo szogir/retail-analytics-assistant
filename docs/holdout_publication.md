@@ -5,8 +5,9 @@ The held-out suite was sealed during development and is spent after the confirma
 its cases and run files lets anyone check that they are exactly the files that
 [`evals/holdout_manifest.json`](../evals/holdout_manifest.json) committed to.
 
-**Status: pending.** The owner performs the steps below. Until the checks in step 4 pass and the
-result is committed, the README describes the publication as pending.
+**Status: published** in commit `7c33b49` (2026-10-10); `--verify` on the published folder
+ends with `verified: yes` (manifest digest `91b689f8...`). The database Release (step 5) is
+still pending. The steps below record how the publication was done.
 
 ## What is published and what is not
 
@@ -110,10 +111,12 @@ Then run the local pre-publication check.
 
 Commit only when the verification and both scans are clean.
 
-### 5. Publish the database as a release attachment (fallback only)
+### 5. Publish the database as a release attachment
 
-The generator is seeded and was byte-identical in a fresh clone, so this is a fallback for
-platforms where the digest differs. Create the release after the commit has been pushed:
+The generator is seeded and byte-identical in a fresh clone on Windows, but a Linux rebuild
+(DuckDB 1.5.6) gives a different digest. The attachment is therefore the reference copy for
+other platforms, and the CI downloads it. Upload the original `data\retail.duckdb`, never a
+regenerated one, and create the release before pushing the CI change:
 
 ```powershell
 gh release create data-v1 data\retail.duckdb --title "Synthetic retail database" `
@@ -122,27 +125,32 @@ gh release create data-v1 data\retail.duckdb --title "Synthetic retail database"
 
 ## After publication
 
-- Replace the "pending" notes in the README (Method and database sections) with the links.
-- Update the sealed-boundary rules: `CLAUDE.md` section 5 and the read-deny rules in
-  `.claude/settings.json` still forbid any access to the held-out suite and must be revised
-  before anyone works with the published copy.
+- The README links the published folders and shows the verification command; the database
+  Release stays marked pending until step 5 is done.
+- The published copy is regression data. The external working folder is not published and
+  stays private.
 
-## Continuous integration after publication (do later, not now)
+## Continuous integration
 
-After the publication commit, the CI should check the commitment on every push. Run, after
-generating the database, `uv run python -m evals.validate_suite --suite holdout --verify
---holdout-dir evals/holdout_published`, and the held-out tests on that folder. Note the current
-workflow runs plain `uv run pytest`; use `-m "not live and not review"` there and let the holdout
-tests find the published folder.
+The CI (`.github/workflows/ci.yml`) checks the commitment on every push:
 
-**Platform caveat.** The CI runs on Linux (`ubuntu-latest`). The byte-identical rebuild of
-`data/retail.duckdb` (SHA-256 `741bd4c1...`) was verified on Windows only. If the database hash
-differs on the first CI run, there are two ways, to be decided then:
+1. downloads `retail.duckdb` from the `data-v1` Release and checks its SHA-256,
+2. runs `uv run python -m evals.validate_suite --suite holdout --verify --holdout-dir
+   evals/holdout_published`,
+3. runs `uv run pytest -m "not live and not review"` with `HOLDOUT_DIR` set to the published
+   folder, so the holdout-marked tests run on it.
 
-1. Download the database from the GitHub Release attachment (step 5 above) and verify its
-   SHA-256 in the CI; the commitment is then checked against the published database itself.
+**Platform decision.** The byte-identical rebuild of `data/retail.duckdb` (SHA-256
+`741bd4c1...`) holds on Windows only: a fresh clone on Linux (python:3.12-slim, DuckDB 1.5.6,
+`uv sync --frozen`) produced `8aed83ad...`. Two ways were documented:
+
+1. Download the database from the GitHub Release attachment (step 5) and verify its SHA-256
+   in the CI; the commitment is then checked against the published database itself.
 2. A separate, clearly labelled verification mode that checks only the case files and the
-   oracle against the manifest (their raw bytes), and says in its output that the database
-   identity was not verified.
+   oracle against the manifest, and says in its output that the database identity was not
+   verified.
 
-Neither is implemented. Do not weaken `verify_commitment` for this: it stays byte-strict.
+Way 1 was chosen. It keeps `verify_commitment` byte-strict and checks everything the manifest
+commits to, including the database, and needs no new code path. Way 2 would verify less and
+add a mode that could be mistaken for the full check. The cost of way 1: the CI depends on the
+Release, so the Release must exist before the CI change is pushed.
