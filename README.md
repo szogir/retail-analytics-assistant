@@ -235,10 +235,15 @@ sha256sum data/retail.duckdb
 
 Expected: `741bd4c18d8f81433565e2cd96edfe5751283f914753583fdbb82a91188df965`. This was
 verified in a fresh clone on Windows with DuckDB 1.5.6. On Linux the same generator and
-DuckDB version give a different digest, so the byte-identical rebuild holds on Windows only.
-On other platforms use the database from the GitHub Release (*pending*, with the same
-SHA-256); the CI downloads that file. Do not regenerate it between a held-out freeze and the final run:
-its hash is part of the commitment.
+DuckDB version give a different digest (`8aed83ad...`): the file's bytes are platform-dependent,
+the content is not. Every table has the same rows on both platforms, and
+`validate_suite --suite development` passes on the Linux database, so the reference results
+match on Linux too (within 1e-9 relative tolerance; the last floating-point digits of a
+parallel sum can differ even between two runs on the same file). The hash commitment needs the
+exact bytes, so on other platforms use the database from the
+[`data-v1` GitHub Release](https://github.com/szogir/retail-analytics-assistant/releases/tag/data-v1)
+(`retail.duckdb`, same SHA-256); the CI downloads that file. Do not regenerate it between a
+held-out freeze and the final run: its hash is part of the commitment.
 
 ## Reproducing the numbers
 

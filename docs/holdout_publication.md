@@ -6,8 +6,10 @@ its cases and run files lets anyone check that they are exactly the files that
 [`evals/holdout_manifest.json`](../evals/holdout_manifest.json) committed to.
 
 **Status: published** in commit `7c33b49` (2026-10-10); `--verify` on the published folder
-ends with `verified: yes` (manifest digest `91b689f8...`). The database Release (step 5) is
-still pending. The steps below record how the publication was done.
+ends with `verified: yes` (manifest digest `91b689f8...`). The database is published as the
+[`data-v1` Release](https://github.com/szogir/retail-analytics-assistant/releases/tag/data-v1)
+attachment `retail.duckdb` (step 5; SHA-256 `741bd4c1...`, checked against the uploaded file).
+The steps below record how the publication was done.
 
 ## What is published and what is not
 
@@ -125,8 +127,8 @@ gh release create data-v1 data\retail.duckdb --title "Synthetic retail database"
 
 ## After publication
 
-- The README links the published folders and shows the verification command; the database
-  Release stays marked pending until step 5 is done.
+- The README links the published folders, the verification command and the `data-v1`
+  database Release.
 - The published copy is regression data. The external working folder is not published and
   stays private.
 
@@ -142,7 +144,14 @@ The CI (`.github/workflows/ci.yml`) checks the commitment on every push:
 
 **Platform decision.** The byte-identical rebuild of `data/retail.duckdb` (SHA-256
 `741bd4c1...`) holds on Windows only: a fresh clone on Linux (python:3.12-slim, DuckDB 1.5.6,
-`uv sync --frozen`) produced `8aed83ad...`. Two ways were documented:
+`uv sync --frozen`) produced `8aed83ad...`. The file's bytes are platform-dependent, the
+content is not: in the same container every table of the Linux database had the same rows as
+the Windows original (`EXCEPT ALL` in both directions, equal row counts), and
+`validate_suite --suite development` passed on the Linux database. The reference results
+therefore match on Linux too: all 40 development reference queries agree with the Windows
+results within 1e-9 relative tolerance. The only differences are in the last floating-point
+digits, and they also appear between two runs on the same Windows file (parallel summation
+order), so they are not a platform effect. Two ways were documented:
 
 1. Download the database from the GitHub Release attachment (step 5) and verify its SHA-256
    in the CI; the commitment is then checked against the published database itself.
