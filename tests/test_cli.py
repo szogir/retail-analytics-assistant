@@ -8,6 +8,8 @@ import datetime as dt
 from pathlib import Path
 
 import pytest
+from rich.console import Console
+from rich.text import Text
 from typer.testing import CliRunner
 
 from retail_assistant import cli
@@ -43,7 +45,14 @@ def answer(**fields: object) -> SqlAnswer:
 def use_fake(monkeypatch: pytest.MonkeyPatch, full_db_path: Path):  # type: ignore[no-untyped-def]
     """Point the CLI at the generated database and a scripted fake model."""
     monkeypatch.setenv("RETAIL_DB_PATH", str(full_db_path))
-    monkeypatch.setenv("COLUMNS", "100")  # rich wraps at this width, so output is stable
+    # Design note: a fixed console instead of rich's terminal detection. On Windows rich picks
+    # the legacy console (square box, one column narrower); on Linux it draws rounded boxes.
+    # The snapshot must not depend on the platform the tests run on.
+    monkeypatch.setattr(
+        cli,
+        "build_console",
+        lambda: Console(width=100, legacy_windows=False, force_terminal=False, color_system=None),
+    )
 
     def install(*responses: SqlAnswer) -> FakeLLMClient:
         fake = FakeLLMClient(responses=list(responses))
@@ -192,4 +201,5 @@ def test_the_user_option_is_required() -> None:
     """No default user: the caller must say whose permissions apply."""
     result = runner.invoke(cli.app, ["ask", "q"])
     assert result.exit_code == 2
-    assert "--user" in result.output
+    # Typer forces colours when GITHUB_ACTIONS is set; the escape codes split the option name.
+    assert "--user" in Text.from_ansi(result.output).plain
