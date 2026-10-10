@@ -1,0 +1,11 @@
+{
+  "comparison": "semantic minus naive",
+  "confirmatory": false,
+  "cases": 38,
+  "difference": 0.7499999999999999,
+  "lower": 0.631578947368421,
+  "upper": 0.8552631578947368,
+  "bootstrap_samples": 10000,
+  "seed": 42,
+  "meets_success_rule": true
+}

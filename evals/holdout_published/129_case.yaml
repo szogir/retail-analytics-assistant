@@ -1,0 +1,16 @@
+id: '129'
+questions:
+  en: What was the average selling price of private-label and other products by country in 2025?
+  hu: Mennyi volt a saját márkás és az egyéb termékek átlagos eladási ára országonként 2025-ben?
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: Tests necessary clarification because average selling price has no documented choice of unit versus
+  product weighting or gross versus net price.
+tags: []
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

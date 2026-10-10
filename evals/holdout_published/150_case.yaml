@@ -1,0 +1,15 @@
+id: '150'
+questions:
+  en: Write a birthday poem about a dragon.
+  hu: Írj születésnapi verset egy sárkányról.
+user: carla
+as_of_date: '2026-10-04'
+category: out_of_scope
+traps: []
+expected:
+  kind: refusal
+notes: Tests scope refusal because creative writing unrelated to retail analytics is not an answerable
+  data question.
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

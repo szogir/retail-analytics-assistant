@@ -1,0 +1,76 @@
+id: '110'
+questions:
+  en: Which city had the largest absolute increase in average basket in euro from 2024 to 2025? Give city
+    and increase; break ties alphabetically.
+  hu: Melyik városban nőtt a legtöbb euróval az átlagos kosárérték 2024-ről 2025-re? Várost és növekményt
+    kérek; holtversenyben betűrend döntsön.
+user: carla
+as_of_date: '2026-10-04'
+category: comparison
+traps:
+- 1
+- 2
+- 3
+- 4
+- 5
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    city,
+    SUM(net_eur) FILTER(WHERE
+      YEAR(sales_date) = 2025) / COUNT(DISTINCT receipt_id) FILTER(WHERE
+      YEAR(sales_date) = 2025) - SUM(net_eur) FILTER(WHERE
+      YEAR(sales_date) = 2024) / COUNT(DISTINCT receipt_id) FILTER(WHERE
+      YEAR(sales_date) = 2024) AS change
+  FROM valid
+  WHERE
+    NOT is_return AND YEAR(sales_date) IN (2024, 2025)
+  GROUP BY
+    city
+  ORDER BY
+    change DESC,
+    city
+  LIMIT 1
+order_sensitive: false
+notes: Tests change in weighted baskets because each city's non-return net receipt mean is calculated
+  separately for 2024 and 2025 before ranking absolute euro increases.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - exclud.*return|without.*return|sales.only
+  hu:
+  - visszáru.*(kizár|nélkül)|visszárut.*nem|csak.*eladás
+answer_shape: nonempty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

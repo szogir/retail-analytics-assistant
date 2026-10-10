@@ -1,0 +1,15 @@
+id: '141'
+questions:
+  en: How much did our premium range bring in last year?
+  hu: Mennyit hozott a prémium kínálatunk tavaly?
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: Tests necessary clarification because premium has no documented product-selection rule and cannot
+  silently mean all branded products.
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

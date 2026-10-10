@@ -1,0 +1,62 @@
+id: '122'
+questions:
+  en: What fraction of receipts in Austria in 2025 contained at least one private-label item?
+  hu: Az osztrák bizonylatok mekkora részén szerepelt legalább egy saját márkás termék 2025-ben? Törtet
+    kérek.
+user: carla
+as_of_date: '2026-10-04'
+category: ratio
+traps:
+- 1
+- 2
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    CAST(COUNT(DISTINCT receipt_id) FILTER(WHERE
+      is_private_label) AS DOUBLE) / COUNT(DISTINCT receipt_id)
+  FROM valid
+  WHERE
+    country_code = 'AT' AND YEAR(sales_date) = 2025 AND NOT is_return
+order_sensitive: false
+notes: Tests receipt incidence rather than revenue share because Austrian receipts with any private-label
+  product are counted once against all 2025 sales receipts.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - exclud.*return|without.*return|sales.only|return.*exclud
+  hu:
+  - visszáru.*(kizár|nélkül)|visszárut.*nem|csak.*eladás
+answer_shape: nonempty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

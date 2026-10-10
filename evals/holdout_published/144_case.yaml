@@ -1,0 +1,15 @@
+id: '144'
+questions:
+  en: What share of revenue came from loyal customers in 2025?
+  hu: A bevétel mekkora része származott hűséges vásárlóktól 2025-ben?
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: Tests unavailable customer data because receipt identities do not identify loyal customers, so
+  a customer-revenue share cannot be fabricated.
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

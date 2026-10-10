@@ -1,0 +1,17 @@
+id: '140'
+questions:
+  en: By country, how did the gap between private-label and other-product sales change from 2024 to 2025?
+  hu: Országonként hogyan változott a saját márkás és az egyéb termékek forgalma közötti különbség 2024-ről
+    2025-re?
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: Tests necessary clarification because the signed gap direction and absolute-versus-relative change
+  are not defined, so the subtraction order must not be invented.
+tags: []
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

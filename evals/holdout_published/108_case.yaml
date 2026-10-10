@@ -1,0 +1,64 @@
+id: '108'
+questions:
+  en: What fraction of Hungary's 2024 turnover in euro came from Saturdays and Sundays combined?
+  hu: A 2024-es magyar, euróban mért forgalom mekkora része származott szombatról és vasárnapról együttesen?
+    Törtet kérek.
+user: carla
+as_of_date: '2026-10-04'
+category: ratio
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    SUM(net_eur) FILTER(WHERE
+      ISODOW(sales_date) IN (6, 7)) / SUM(net_eur)
+  FROM valid
+  WHERE
+    country_code = 'HU' AND YEAR(sales_date) = 2024
+order_sensitive: false
+notes: Tests a weekday revenue share because Hungarian Saturday and Sunday net euro sales form the numerator
+  against all calendar-2024 Hungarian net revenue.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - \bnet\b
+  hu:
+  - nettó
+answer_shape: nonempty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

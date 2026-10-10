@@ -1,0 +1,74 @@
+id: '117'
+questions:
+  en: Show the top two regions within each country by 2025 net sales in euro. Return country, region and
+    total, sorted by country then descending total, with alphabetical ties.
+  hu: Mutasd meg országonként a két legnagyobb nettó árbevételű régiót 2025-ben, euróban. Országot, régiót
+    és összeget kérek, ország szerint, azon belül csökkenő összeggel; holtversenyben betűrenddel.
+user: carla
+as_of_date: '2026-10-04'
+category: ranking
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  ), r AS (
+    SELECT
+      country_code,
+      region_name,
+      SUM(net_eur) AS n
+    FROM valid
+    WHERE
+      YEAR(sales_date) = 2025
+    GROUP BY
+      country_code,
+      region_name
+  )
+  SELECT
+    *
+  FROM r
+  QUALIFY
+    ROW_NUMBER() OVER (PARTITION BY country_code ORDER BY n DESC, region_name) <= 2
+  ORDER BY
+    country_code,
+    n DESC,
+    region_name
+order_sensitive: true
+notes: Tests partitioned ranking because the two highest net euro regions are chosen separately within
+  each country before applying the requested output order.
+tags: []
+assumption_patterns: {}
+answer_shape: nonempty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

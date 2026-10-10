@@ -1,0 +1,15 @@
+id: '143'
+questions:
+  en: Show the holiday effect on sales.
+  hu: Mutasd meg az ünnepek hatását a forgalomra.
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: Tests necessary clarification because a holiday effect lacks a selected holiday, period and comparison
+  baseline and cannot establish causality from sales alone.
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

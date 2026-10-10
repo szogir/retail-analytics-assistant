@@ -1,0 +1,70 @@
+id: '128'
+questions:
+  en: Show Austria's 2025 net average basket in euro by weekday. Use weekday numbers Monday=1 through
+    Sunday=7 and include only days with receipts.
+  hu: Mutasd meg az osztrák nettó átlagos kosárértéket euróban a hét napjai szerint 2025-ben. Hétfő=1,
+    vasárnap=7 számozást használj, csak bizonylattal rendelkező napokra.
+user: carla
+as_of_date: '2026-10-04'
+category: ratio
+traps:
+- 1
+- 2
+- 3
+- 4
+- 5
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    ISODOW(sales_date) AS weekday,
+    SUM(net_eur) / COUNT(DISTINCT receipt_id)
+  FROM valid
+  WHERE
+    country_code = 'AT' AND YEAR(sales_date) = 2025 AND NOT is_return
+  GROUP BY
+    weekday
+  ORDER BY
+    weekday
+order_sensitive: true
+notes: Tests weekday-level weighted baskets because Austrian 2025 sales receipts are grouped by weekday
+  before averaging their net euro totals.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - exclud.*return|without.*return|sales.only|return.*exclud
+  hu:
+  - visszáru.*(kizár|nélkül)|visszárut.*nem|csak.*eladás
+answer_shape: nonempty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

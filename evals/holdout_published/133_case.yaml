@@ -1,0 +1,45 @@
+id: '133'
+questions:
+  en: Report net sales in euro for calendar Q1 2025 and fiscal Q1 2025. Return one row per period, using
+    the period codes calendar_q1 and fiscal_q1.
+  hu: Add meg a 2025-ös első naptári és első pénzügyi negyedév nettó árbevételét euróban. Időszakonként
+    egy sort kérek, calendar_q1 és fiscal_q1 időszakazonosítóval.
+user: carla
+as_of_date: '2026-10-04'
+category: time
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.sales_date,
+      (f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate AS net_eur
+    FROM fact_sales AS f
+    JOIN dim_store AS s USING (store_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT 'calendar_q1' AS period, SUM(net_eur) AS net_sales_eur
+  FROM valid
+  WHERE sales_date BETWEEN DATE '2025-01-01' AND DATE '2025-03-31'
+  UNION ALL
+  SELECT 'fiscal_q1' AS period, SUM(net_eur) AS net_sales_eur
+  FROM valid
+  WHERE sales_date BETWEEN DATE '2025-03-01' AND DATE '2025-05-31'
+  ORDER BY period
+order_sensitive: false
+notes: 'Tests calendar-versus-fiscal quarter scope with explicit period identifiers: calendar_q1 covers
+  January through March 2025 and fiscal_q1 covers March through May 2025. Each net euro total stays attached
+  to its period so column permutation cannot conceal swapped period values.'
+tags: []
+assumption_patterns: {}
+answer_shape: nonempty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

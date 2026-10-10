@@ -1,0 +1,56 @@
+id: '136'
+questions:
+  en: What was the mean net euro value of the highest-net-value line on each non-return sales receipt
+    in Hungary in 2025?
+  hu: Mennyi volt Magyarországon 2025-ben az eladási bizonylatok legnagyobb nettó értékű tételsorának
+    átlagos euróértéke, a visszáru-bizonylatok nélkül?
+user: carla
+as_of_date: '2026-10-04'
+category: composition
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH receipt_maxima AS (
+    SELECT
+      f.receipt_id,
+      MAX(
+        (f.gross_amount - f.discount_amount - f.vat_amount) / fx.eur_rate
+      ) AS largest_line_net_eur
+    FROM fact_sales AS f
+    JOIN dim_store AS s USING (store_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled
+      AND NOT s.is_test_store
+      AND NOT f.is_return
+      AND s.country_code = 'HU'
+      AND f.sales_date >= DATE '2025-01-01'
+      AND f.sales_date < DATE '2026-01-01'
+    GROUP BY f.receipt_id
+  )
+  SELECT AVG(largest_line_net_eur) AS mean_largest_line_net_eur
+  FROM receipt_maxima
+order_sensitive: false
+notes: 'Tests receipt-level extrema followed by an equally weighted mean: take each Hungarian non-return
+  sales receipt''s largest net euro line value in calendar 2025, then average those values across receipts.
+  Cancelled receipts and test stores are excluded by documented defaults. Unlike a receipt-total median
+  or average basket, this requires MAX within receipts before averaging.'
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - cancelled.*exclud|exclud.*cancelled
+  - test.*exclud|exclud.*test
+  hu:
+  - sztornó.*(kizár|kihagy)|(kizár|kihagy).*sztornó
+  - teszt.*(kizár|kihagy)|(kizár|kihagy).*teszt
+answer_shape: nonempty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

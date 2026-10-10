@@ -1,0 +1,66 @@
+id: '115'
+questions:
+  en: Which category added the most net sales in euro from fiscal year 2024 to fiscal year 2025? Give
+    English name and absolute increase; break ties alphabetically.
+  hu: Melyik kategória hozta a legnagyobb nettóárbevétel-növekményt euróban a 2024-es és a 2025-ös pénzügyi
+    év között? Angol nevet és abszolút növekményt kérek; holtversenyben betűrend döntsön.
+user: carla
+as_of_date: '2026-10-04'
+category: comparison
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    category_en,
+    SUM(CASE WHEN sales_date >= '2025-03-01' THEN net_eur ELSE -net_eur END) AS change
+  FROM valid
+  WHERE
+    sales_date BETWEEN '2024-03-01' AND '2026-02-28'
+  GROUP BY
+    category_en
+  ORDER BY
+    change DESC,
+    category_en
+  LIMIT 1
+order_sensitive: false
+notes: Tests absolute category growth across fiscal years because fiscal-2025 category net euro totals
+  are reduced by their own fiscal-2024 totals before selecting the largest increase.
+tags: []
+assumption_patterns: {}
+answer_shape: nonempty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

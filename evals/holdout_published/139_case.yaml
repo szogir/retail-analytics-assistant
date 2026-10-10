@@ -1,0 +1,69 @@
+id: '139'
+questions:
+  en: For each country, what fraction of receipts were cancelled in calendar Q4 2025?
+  hu: Országonként a bizonylatok mekkora részét sztornózták 2025 negyedik naptári negyedévében? Törtet
+    kérek.
+user: carla
+as_of_date: '2026-10-04'
+category: ratio
+traps:
+- 1
+- 2
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    s.country_code,
+    CAST(COUNT(DISTINCT f.receipt_id) FILTER(WHERE
+      f.is_cancelled) AS DOUBLE) / COUNT(DISTINCT f.receipt_id)
+  FROM fact_sales AS f
+  JOIN dim_store AS s
+    USING (store_id)
+  WHERE
+    NOT s.is_test_store
+    AND NOT f.is_return
+    AND f.sales_date BETWEEN '2025-10-01' AND '2025-12-31'
+  GROUP BY
+    s.country_code
+order_sensitive: false
+notes: Tests the cancellation exception because cancelled sales receipts are counted within all non-return
+  receipts for each country during calendar Q4 2025.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - exclud.*return|without.*return|sales.only|return.*exclud
+  hu:
+  - visszáru.*(kizár|nélkül)|visszárut.*nem|csak.*eladás
+answer_shape: nonempty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

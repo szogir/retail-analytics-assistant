@@ -1,0 +1,14 @@
+id: '142'
+questions:
+  en: Which region improved the most?
+  hu: Melyik régió fejlődött a legtöbbet?
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: Tests necessary clarification because improvement has no specified measure or comparison windows.
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

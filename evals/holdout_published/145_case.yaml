@@ -1,0 +1,15 @@
+id: '145'
+questions:
+  en: Compare the stores on a like-for-like basis.
+  hu: Hasonlítsd össze az üzleteket azonos bázison.
+user: carla
+as_of_date: '2026-10-04'
+category: ambiguous
+traps: []
+expected:
+  kind: clarification
+notes: Tests necessary clarification because like-for-like lacks a metric, comparison dates and inclusion
+  rule.
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard

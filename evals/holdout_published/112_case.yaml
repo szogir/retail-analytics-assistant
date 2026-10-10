@@ -1,0 +1,67 @@
+id: '112'
+questions:
+  en: List daily net sales in euro from 20 to 28 February 2023.
+  hu: Sorold fel a napi nettó árbevételt euróban 2023. február 20–28. között.
+user: carla
+as_of_date: '2026-10-04'
+category: coverage
+traps:
+- 1
+- 2
+- 3
+- 4
+expected:
+  kind: result
+reference_sql: |
+  WITH valid AS (
+    SELECT
+      f.*,
+      s.store_name,
+      s.city,
+      s.country_code,
+      s.region_name,
+      p.name_en,
+      p.name_hu,
+      p.category_en,
+      p.is_private_label,
+      (
+        f.gross_amount - f.discount_amount - f.vat_amount
+      ) / fx.eur_rate AS net_eur,
+      f.gross_amount / fx.eur_rate AS gross_eur,
+      f.discount_amount / fx.eur_rate AS discount_eur,
+      f.vat_amount / fx.eur_rate AS vat_eur,
+      f.gross_amount - f.discount_amount - f.vat_amount AS net_local
+    FROM fact_sales AS f
+    JOIN dim_store AS s
+      USING (store_id)
+    JOIN dim_product AS p
+      USING (product_id)
+    JOIN fx_rate AS fx
+      ON f.sales_date = fx.rate_date AND f.currency = fx.currency
+    WHERE
+      NOT f.is_cancelled AND NOT s.is_test_store
+  )
+  SELECT
+    sales_date,
+    SUM(net_eur)
+  FROM valid
+  WHERE
+    sales_date BETWEEN '2023-02-20' AND '2023-02-28'
+  GROUP BY
+    sales_date
+  ORDER BY
+    sales_date
+order_sensitive: false
+notes: Tests missing time coverage because the requested February-2023 dates precede the dataset, yielding
+  no observed daily rows rather than fabricated zero observations.
+tags:
+- default_assumption
+assumption_patterns:
+  en:
+  - no data|outside.*coverage|not covered
+  hu:
+  - nincs adat|adat.*kívül|nem.*lefed
+answer_shape: empty
+reviewed: true
+reviewed_on: '2026-10-04'
+reviewed_by: Richard
