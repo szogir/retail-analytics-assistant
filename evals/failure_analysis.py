@@ -28,6 +28,7 @@ from typing import Annotated, Any
 import typer
 
 from evals.golden import GOLDEN_SET_DIR, load_golden_set
+from evals.suites import PROJECT_ROOT, PUBLISHED_HOLDOUT
 
 HEURISTIC_NOTICE = (
     "The rule categories are heuristic text patterns on the model SQL versus the reference "
@@ -227,20 +228,29 @@ def analyze_run_file(
     Args:
         run_file: JSON file written by `evals.run_eval`.
         expected_mode: If given, the file must have been produced in this mode.
-        golden_dir: Development golden-set folder holding the reference SQL.
+        golden_dir: Folder holding the reference SQL: the development golden set, or for a
+            holdout run the published holdout copy (`evals/holdout_published`).
 
     Returns:
         The aggregated counts.
 
     Raises:
-        ValueError: If the file's mode differs from `expected_mode`, or the run belongs
-            to the holdout suite (this tool must never read sealed references).
+        ValueError: If the file's mode differs from `expected_mode`, or the suite and the
+            reference folder do not belong together.
     """
     data = json.loads(run_file.read_text(encoding="utf-8"))
     info = data["info"]
-    # Why: the sealed holdout references must stay unseen during semantic development.
-    if info.get("suite") != "development":
-        raise ValueError("failure analysis only supports development runs")
+    suite = info.get("suite")
+    published = (PROJECT_ROOT / PUBLISHED_HOLDOUT).resolve()
+    # Why: after publication the holdout is regression data (Decision 23), so its run files may
+    # be analysed, but only against the published, committed copy - never an external folder.
+    if suite == "holdout":
+        if golden_dir.resolve() != published:
+            raise ValueError("a holdout run is only analysed against evals/holdout_published")
+    elif suite != "development":
+        raise ValueError("failure analysis only supports development and published holdout runs")
+    elif golden_dir.resolve() == published:
+        raise ValueError("a development run needs the development references")
     if expected_mode is not None and info["mode"] != expected_mode:
         raise ValueError(f"run file mode is {info['mode']!r}, expected {expected_mode!r}")
     return analyze(
@@ -256,10 +266,14 @@ def main(
     run_file: Annotated[Path, typer.Argument(help="run JSON written by evals.run_eval")],
     mode: Annotated[str, typer.Option(help="expected mode; checked against the file")] = "",
     out: Annotated[Path | None, typer.Option(help="write the Markdown here")] = None,
+    references: Annotated[
+        Path,
+        typer.Option(help="reference SQL folder (evals/holdout_published for a holdout run)"),
+    ] = GOLDEN_SET_DIR,
 ) -> None:
-    """Print (or save) the failure analysis of one development run file."""
+    """Print (or save) the failure analysis of one run file."""
     try:
-        analysis = analyze_run_file(run_file, expected_mode=mode or None)
+        analysis = analyze_run_file(run_file, expected_mode=mode or None, golden_dir=references)
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc
     text = render_markdown(analysis, run_file)

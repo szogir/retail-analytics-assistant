@@ -862,3 +862,91 @@ proven away by 20 passes, so the evidence is the identified cause and the tolera
 **Checking discipline.** Commit `c9d7912` was made while a test was failing, because the check was
 piped through `tail` and the pipe hid the exit code. Checks now run with `set -o pipefail` or
 without a pipe, and the exit code is read before committing.
+
+
+## Decision 23: ablation of the semantic layer, preregistered before the runs (2026-10-10)
+
+**Context.** Decision 16 showed that the semantic layer as a whole lifts primary accuracy from
+11.8% (commented) to 86.0% on the holdout. It did not show which part does the work: the rules,
+the metric definitions with their mandatory filters, the join paths or the verified examples.
+This decision fixes the question, the variants and the analysis before any ablation run is made.
+
+**Variants** (`--ablation`, semantic mode only; prompt template, schema text and section order
+unchanged, an omitted section disappears with its heading):
+
+| variant | rules | metrics | join paths | examples | prompt SHA-256 (first 8) |
+|---|---|---|---|---|---|
+| `full` (default) | yes | yes | yes | yes | `e3e91b83` (= Decision 15) |
+| `no_examples` | yes | yes | yes | no | `b6805633` |
+| `no_rules` | no | yes | yes | yes | `2ea75723` |
+| `metrics_joins` | no | yes | yes | no | `b54e0df9` |
+
+Metrics and join paths are kept in every variant: without them the mode is "commented", which is
+already measured. A test pins the `full` prompt to the frozen SHA-256 `e3e91b83…` and the naive and
+commented prompts to their recorded values, and the scoring hash stays `1056bb8f…`, so every earlier
+run remains valid. Rejected: one prompt file per variant, because the surrounding template text
+would then change together with the content, two differences at once.
+
+**Runs.** Profile `claude_small` (`claude-haiku-4-5`) only, mode `semantic`, 3 repetitions, both
+languages, validator off, no user override (the holdout-v1 configuration), all four variants on:
+- the development suite (dev-informed: the layer was tuned on it, Decision 15);
+- the published holdout v1 (`--holdout-dir evals/holdout_published`, given explicitly for every
+  variant including `full`), as **regression data**, not
+  confirmatory; output in `evals/runs/holdout-regression/`, never inside the published folder.
+  The holdout runs are started by the owner (the development session may not run
+  `--suite holdout`).
+
+`full` is re-run as well: `config_hash` on HEAD (`7dae3d7a…`) differs from all earlier semantic runs
+(`17c53d78…`, price-only change, Decision 18), and the paired analysis does not relax that key.
+
+**Primary analysis.** Per variant and suite: primary accuracy on data questions (240 development,
+228 holdout), with the three repetitions shown separately. Paired, case-clustered bootstrap of each
+ablated variant minus `full` on the same suite (`evals.paired_analysis --diagnostic`, 10,000
+samples, seed 42): 3 comparisons per suite, no multiplicity correction, reported as diagnostic
+estimates with intervals, without a success-rule verdict. `paired_analysis` was extended for this
+only: `--diagnostic` accepts two holdout runs when both are semantic, the ablation variant is the
+only difference, and the holdout commitment is verified; every other identity key (including
+`config_hash`) must still match, and the output is labelled "DIAGNOSTIC
+(published holdout, regression data)". In any ablation comparison, on either suite, the backend
+settings (validator, retry, user) must match as well: only one thing changes. The confirmatory
+branch is unchanged.
+
+**Failure analysis.** `evals.failure_analysis` per run (holdout runs only against
+`evals/holdout_published`): which trap labels return, compared with `full` of the same suite. The
+labels are heuristic (text patterns on SQL), so a change is reported as counts, sampled by hand
+before it is called a cause.
+
+**Secondary question, named in advance (phase-4 hypothesis).** Decision 16 found that
+clarification did not generalise (90% development, 45.2% holdout) and suggested, unverified, that
+explicit rules and defaults make the model overconfident. Per variant and suite, two rates (status
+`clarification`, also printed in every run report). Decision 16's 45.2% is a strict pass, which
+also needs a non-empty clarification message; the reproducibility row therefore shows the strict
+clarification pass too, and the "asked back" rate is labelled as status only:
+- asked back on clarification cases (development 30 questions / 5 cases, holdout 42 / 7);
+- asked back needlessly on data cases (240 / 228 questions).
+
+The hypothesis predicts a higher first rate for `no_rules` and `metrics_joins` than for `full`. It
+is called "consistent with the hypothesis" only if the direction is the same on both suites; a
+difference on one suite only, or in opposite directions, is "not supported". With 5 and 7 cases the
+rates are descriptive (no bootstrap), and a rise in needless questions alongside would mean "asks
+more", not "judges better".
+
+**Reproducibility check.** The `full` holdout result on HEAD is shown next to the Decision 16 value
+(86.0%) as one separate row. Different `config_hash`, so the two are only placed side by side, never
+paired. The row compares two code states, not two noise draws of one: between the `holdout-v1` tag
+and HEAD the validator-off path also changed (executor, the Decision 22 `definition` status, the
+usage capture of unusable answers). After the run, the two `info` objects are compared key by key
+and every difference is listed in that row.
+
+**Known confounds, stated before the runs.**
+- Each metric's "Always filter" line carries trap knowledge (cancelled receipts, test stores), so
+  `no_rules` is not "no trap knowledge"; it removes the rules list only.
+- In `no_rules` the examples still name the removed rules in "Rules and metrics shown".
+- The template paragraph mentions rules and verified examples in every variant.
+- Effects need not add up: removing rules and examples together can differ from the sum of the
+  single removals.
+- One model, synthetic data, 40 and 38 data cases; the development suite is dev-informed.
+
+**Consequences.** The ablation result is diagnostic. Decision 16 remains the confirmatory result.
+Nothing is tuned on these numbers; a change to the layer prompted by them needs new development
+cases and a new unseen suite before any confirmatory claim.

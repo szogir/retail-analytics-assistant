@@ -20,7 +20,7 @@ from typing import Literal
 from retail_assistant.llm.base import LLMClient, LLMError, LLMOutputError, LLMResult, Usage
 from retail_assistant.llm.profiles import ModelProfile
 from retail_assistant.llm.schemas import SqlAnswer
-from retail_assistant.semantic.context import Mode, build_system_prompt, prompt_version
+from retail_assistant.semantic.context import Ablation, Mode, build_system_prompt, prompt_version
 from retail_assistant.semantic.loader import load_semantic_layer
 from retail_assistant.sql.access import AccessError, UserAccess, load_users, open_user_connection
 from retail_assistant.sql.executor import (
@@ -131,6 +131,7 @@ def ask(
     validate: bool = True,
     users_path: Path | None = None,
     retry: bool = False,
+    ablation: Ablation = "full",
 ) -> Answer:
     """Answer one question.
 
@@ -153,6 +154,8 @@ def ask(
         retry: True = after a "sql_error" or "blocked" result, ask the model once more with
             the error text. Needs `validate=True`. Default False, so earlier runs stay
             reproducible.
+        ablation: Which parts of the semantic layer the prompt contains (Decision 23). The
+            default "full" is the frozen v3 prompt; other values are for the ablation study.
 
     Why `validate` defaults to True (secure by default): a caller that forgets the argument
     gets the protected path, never the unprotected one. The eval runner passes the flag
@@ -185,7 +188,7 @@ def ask(
         raise ValueError(f"user '{user}' is not supported without validate=True")
 
     version = prompt_version(mode)
-    system = build_system_prompt(mode, db_path, prompts_dir, semantic_dir)
+    system = build_system_prompt(mode, db_path, prompts_dir, semantic_dir, ablation)
 
     user_prompt = build_user_prompt(question, lang, as_of)
     try:

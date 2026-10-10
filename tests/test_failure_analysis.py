@@ -92,11 +92,15 @@ def _write_run(path: Path, suite: str, mode: str) -> None:
     path.write_text(json.dumps({"info": info, "results": []}), encoding="utf-8")
 
 
-def test_mode_mismatch_and_holdout_runs_are_rejected(tmp_path: Path) -> None:
+def test_mode_mismatch_and_unsupported_runs_are_rejected(tmp_path: Path) -> None:
     run = tmp_path / "run.json"
     _write_run(run, "development", "naive")
     with pytest.raises(ValueError, match="expected 'commented'"):
         analyze_run_file(run, expected_mode="commented")
+    # A holdout run is only analysed against the published copy, never the default folder.
     _write_run(run, "holdout", "naive")
-    with pytest.raises(ValueError, match="only supports development"):
+    with pytest.raises(ValueError, match="only analysed against evals/holdout_published"):
+        analyze_run_file(run)
+    _write_run(run, "security", "naive")
+    with pytest.raises(ValueError, match="only supports development and published holdout"):
         analyze_run_file(run)

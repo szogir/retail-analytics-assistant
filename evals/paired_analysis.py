@@ -3,6 +3,10 @@
 Languages and repetitions stay inside their case: resampling individual questions
 would exaggerate the independent evidence. This is analysis of this benchmark,
 not a population guarantee about arbitrary retail questions.
+
+Usage:
+    uv run python -m evals.paired_analysis before.json after.json
+    uv run python -m evals.paired_analysis before.json after.json --diagnostic
 """
 
 import argparse
@@ -32,6 +36,8 @@ IDENTITY_KEYS = (
 )
 # Backend settings added on day 5, with the value that older run files implicitly had.
 BACKEND_DEFAULTS: dict[str, object] = {"validator": False, "retry": False, "user": ""}
+# The semantic ablation variant (Decision 23); run files from before the study were "full".
+ABLATION_DEFAULT = "full"
 
 
 def differing_backend_settings(before: dict[str, object], after: dict[str, object]) -> list[str]:
@@ -123,8 +129,8 @@ def main() -> None:
     parser.add_argument(
         "--diagnostic",
         action="store_true",
-        help="allow two runs of the DEVELOPMENT suite; the output is labelled diagnostic and "
-        "is never a confirmatory result",
+        help="allow two runs of the DEVELOPMENT suite, or two ablation variants on the "
+        "published holdout; the output is labelled diagnostic and is never a confirmatory result",
     )
     args = parser.parse_args()
     before = json.loads(args.before.read_text(encoding="utf-8"))
@@ -136,21 +142,41 @@ def main() -> None:
     # a separate, explicitly opt-in branch for the development suite whose output says so;
     # the alternative, loosening the holdout checks, could turn a development number into
     # something that looks confirmatory.
-    diagnostic = args.diagnostic and before["info"].get("suite") == "development"
+    suite = before["info"].get("suite")
+    ablations = [
+        before["info"].get("ablation", ABLATION_DEFAULT),
+        after["info"].get("ablation", ABLATION_DEFAULT),
+    ]
+    ablation_differs = ablations[0] != ablations[1]
+    # Decision 23: the spent holdout is regression data, so two ablation variants on it may be
+    # compared diagnostically. Only the ablation may differ there; two runs of the same variant
+    # on the holdout keep the confirmatory rules below, and so does a mode comparison.
+    both_semantic = before["info"].get("mode") == after["info"].get("mode") == "semantic"
+    holdout_ablation = suite == "holdout" and ablation_differs and both_semantic
+    diagnostic = args.diagnostic and (suite == "development" or holdout_ablation)
     if args.diagnostic and not diagnostic:
-        raise ValueError("--diagnostic is only for runs of the development suite")
+        raise ValueError(
+            "--diagnostic is only for runs of the development suite, "
+            "or for two ablation variants on the published holdout"
+        )
+    if ablation_differs and not diagnostic:
+        raise ValueError("Run configurations differ: ablation")
     # Backend settings (day 5) may differ only in a diagnostic comparison, for example "semantic
     # without validator" versus "semantic with validator". Every other identity key above stays
     # mandatory. Older run files have no such keys; they mean "off / off / each case's user".
+    # An ablation comparison changes exactly one thing, so no backend difference is allowed in it.
     differing = differing_backend_settings(before["info"], after["info"])
-    if differing and not diagnostic:
+    if differing and (not diagnostic or ablation_differs):
         raise ValueError(f"Run configurations differ: {', '.join(differing)}")
+    verified = bool(
+        before["info"].get("holdout_verified") and before["info"].get("holdout_manifest_hash")
+    )
+    if holdout_ablation and not verified:
+        raise ValueError("A holdout ablation comparison requires the verified published holdout")
     if not diagnostic:
         if before["info"].get("suite") != "holdout":
             raise ValueError("Confirmatory analysis requires the frozen holdout suite")
-        if not before["info"].get("holdout_verified") or not before["info"].get(
-            "holdout_manifest_hash"
-        ):
+        if not verified:
             raise ValueError("Confirmatory analysis requires a verified public holdout commitment")
     result = paired_bootstrap(
         [CaseResult(**r) for r in before["results"]], [CaseResult(**r) for r in after["results"]]
@@ -160,12 +186,18 @@ def main() -> None:
             "The registered holdout primary analysis requires every recorded data case"
         )
     comparison = f"{after['info']['mode']} minus {before['info']['mode']}"
+    if ablation_differs:
+        after_label = f"{after['info']['mode']}[{ablations[1]}]"
+        before_label = f"{before['info']['mode']}[{ablations[0]}]"
+        comparison = f"{after_label} minus {before_label}"
     confirmatory = (before["info"]["mode"], after["info"]["mode"]) == (
         "commented",
         "semantic",
     ) and not diagnostic
     estimate = asdict(result)
     label: dict[str, object] = {}
+    if ablation_differs:
+        label["ablation_differs"] = ablations
     if differing:
         label["backend_settings_differ"] = {
             key: [
@@ -178,7 +210,12 @@ def main() -> None:
         # The success rule belongs to the holdout; showing it for development data would
         # invite reading a diagnostic number as a claim.
         del estimate["meets_success_rule"]
-        label["label"] = "DIAGNOSTIC (development suite): not confirmatory, no success-rule verdict"
+        label["label"] = (
+            "DIAGNOSTIC (published holdout, regression data): not confirmatory, "
+            "no success-rule verdict"
+            if holdout_ablation
+            else "DIAGNOSTIC (development suite): not confirmatory, no success-rule verdict"
+        )
     print(
         json.dumps(
             {"comparison": comparison, "confirmatory": confirmatory, **label, **estimate},

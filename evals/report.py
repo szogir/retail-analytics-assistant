@@ -111,6 +111,9 @@ class RunInfo:
     user: str = ""
     # The thinking setting sent with every request ("" in run files from before it was recorded).
     thinking: str = ""
+    # Which parts of the semantic layer were in the prompt (Decision 23). "full" is also what
+    # every run file written before the ablation study had, so it is the default.
+    ablation: str = "full"
 
 
 def percentile(values: Sequence[float], fraction: float) -> float:
@@ -314,6 +317,26 @@ def _security_section(results: Sequence[CaseResult]) -> list[str]:
     return lines
 
 
+def _clarification_section(results: Sequence[CaseResult]) -> list[str]:
+    """Report lines for clarification behaviour: asking when it should, and when it should not.
+
+    Why two numbers: a model can reach a high clarification rate by asking all the time. The
+    rate on clarification cases shows whether it asks when the question is vague; the rate on
+    data cases shows how often it asks needlessly (Decision 23, secondary question).
+    """
+    should_ask = [r for r in results if r.expected_kind == "clarification"]
+    data = [r for r in results if r.expected_kind in ("result", "result_scoped")]
+    asked = sum(r.status == "clarification" for r in should_ask)
+    needless = sum(r.status == "clarification" for r in data)
+    return [
+        "## Clarification behaviour",
+        "",
+        f"- Asked back on clarification cases: **{_percent(asked, len(should_ask))}**",
+        f"- Asked back needlessly on data cases: **{_percent(needless, len(data))}**",
+        "",
+    ]
+
+
 def _percent(part: int, whole: int) -> str:
     return f"{100 * part / whole:.0f}% ({part}/{whole})" if whole else "n/a"
 
@@ -364,6 +387,7 @@ def render_report(
         f"- Model configuration SHA-256: `{info.config_hash}`",
         f"- Scoring SHA-256: `{info.scoring_hash}`; output schema SHA-256: `{info.schema_hash}`",
         *_semantic_header(info),
+        f"- Semantic ablation: `{info.ablation}`",
         f"- Backend: validator {'on' if info.validator else 'off'}, "
         f"retry {'on' if info.retry else 'off'}, "
         f"user {info.user or '(each case its own)'}",
@@ -386,6 +410,7 @@ def render_report(
         "",
     ]
     lines += _security_section(results)
+    lines += _clarification_section(results)
     lines += ["### Primary accuracy by repetition", ""]
     if info.suite == "holdout":
         lines += [

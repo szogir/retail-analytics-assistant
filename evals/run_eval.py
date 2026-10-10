@@ -11,6 +11,7 @@ Where it sits in the pipeline: evaluation only; it drives the whole pipeline fro
 Usage:
     uv run python -m evals.run_eval --mode naive --profile claude_small
     uv run python -m evals.run_eval --mode naive --profile claude_small --save-baseline
+    uv run python -m evals.run_eval --mode semantic --profile claude_small --ablation no_rules
 """
 
 import datetime as dt
@@ -41,14 +42,20 @@ from evals.report import (
 )
 from evals.security_scoring import classify, passed
 from evals.security_suite import SECURITY_SUITE_DIR, SecurityCase, load_security_suite
-from evals.suites import suite_directory
+from evals.suites import PROJECT_ROOT, PUBLISHED_HOLDOUT, suite_directory
 from retail_assistant.config import Settings
 from retail_assistant.llm.base import LLMClient
 from retail_assistant.llm.factory import create_llm
 from retail_assistant.llm.profiles import ModelProfile
 from retail_assistant.llm.schemas import SqlAnswer
 from retail_assistant.pipeline import MAX_OUTPUT_TOKENS, Answer, Language, ask
-from retail_assistant.semantic.context import Mode, build_system_prompt, prompt_version
+from retail_assistant.semantic.context import (
+    ABLATIONS,
+    Ablation,
+    Mode,
+    build_system_prompt,
+    prompt_version,
+)
 from retail_assistant.semantic.loader import load_semantic_layer
 from retail_assistant.sql.executor import QueryResult, execute_query
 
@@ -56,6 +63,9 @@ EVALS_DIR = Path(__file__).parent
 REPORT_PATH = EVALS_DIR / "reports" / "latest.md"
 BASELINE_PATH = EVALS_DIR / "baseline.json"
 RUNS_DIR = EVALS_DIR / "runs"
+# Output folder of runs on the published holdout (regression data, Decision 23). The published
+# folder itself is never written to: its files are part of the public commitment.
+HOLDOUT_REGRESSION_DIR = RUNS_DIR / "holdout-regression"
 
 app = typer.Typer(add_completion=False, help="Run the golden-set evaluation.")
 
@@ -155,6 +165,7 @@ def run_evaluation(
     users_path: Path | None = None,
     user_override: str = "",
     retry: bool = False,
+    ablation: Ablation = "full",
 ) -> list[CaseResult]:
     """Ask every question of every case and grade the answers.
 
@@ -171,6 +182,7 @@ def run_evaluation(
         users_path: `users.yaml`, needed when `validate` is on.
         user_override: Ask every question as this user instead of the case's own user.
         retry: One self-correction retry after a SQL error or block (needs `validate`).
+        ablation: Which parts of the semantic layer the prompt contains (Decision 23).
 
     Returns:
         One graded result per (case, language) that has a question text.
@@ -201,6 +213,7 @@ def run_evaluation(
                 validate=validate,
                 users_path=users_path,
                 retry=retry,
+                ablation=ablation,
             )
             strict, lenient = grade(case, answer, reference)
             # Security scoring is separate from `grade` (frozen): it also knows the backend's
@@ -281,6 +294,10 @@ def main(
     holdout_dir: Annotated[
         Path | None, typer.Option(help="External holdout path (or HOLDOUT_DIR)")
     ] = None,
+    ablation: Annotated[
+        str,
+        typer.Option(help="semantic mode only: full, no_examples, no_rules or metrics_joins"),
+    ] = "full",
 ) -> None:
     """Run the evaluation with a real model and write the report."""
     # Explicit lookup tables instead of casts: an unknown value fails with a clear message
@@ -293,11 +310,28 @@ def main(
         raise typer.BadParameter("lang must be 'en', 'hu' or 'both'")
     run_mode = modes[mode]
     languages = language_choices[lang]
+    # Same explicit lookup as above, so mypy knows the value is a valid `Ablation`.
+    ablation_choices: dict[str, Ablation] = {name: name for name in ABLATIONS}
+    if ablation not in ablation_choices:
+        raise typer.BadParameter(f"ablation must be one of {', '.join(ABLATIONS)}")
+    run_ablation = ablation_choices[ablation]
+    if run_ablation != "full" and run_mode != "semantic":
+        raise typer.BadParameter("--ablation is only defined for --mode semantic")
 
     if suite not in ("development", "security", "holdout"):
         raise typer.BadParameter("suite must be development, security or holdout")
     if suite == "holdout" and (validator or user):
         raise typer.BadParameter("the holdout is spent; it is not run with new options")
+    published = (PROJECT_ROOT / PUBLISHED_HOLDOUT).resolve()
+    on_published_holdout = (
+        suite == "holdout" and holdout_dir is not None and holdout_dir.resolve() == published
+    )
+    if suite == "holdout" and run_ablation != "full" and not on_published_holdout:
+        # Decision 23: the one new option allowed on the spent holdout is the ablation, and only
+        # on the published copy, named explicitly. It never falls back to HOLDOUT_DIR.
+        raise typer.BadParameter(
+            "an ablation on the holdout needs --holdout-dir evals/holdout_published"
+        )
     if suite == "security" and not validator:
         raise typer.BadParameter("the security suite needs --validator (restricted users)")
     if retry and not validator:
@@ -354,7 +388,9 @@ def main(
         case_hash=case_hash(cases),
         database_hash=file_hash(settings.db_path),
         prompt_hash=hashlib.sha256(
-            build_system_prompt(run_mode, settings.db_path, prompts_dir, semantic_dir).encode()
+            build_system_prompt(
+                run_mode, settings.db_path, prompts_dir, semantic_dir, run_ablation
+            ).encode()
         ).hexdigest(),
         repetitions=repetitions,
         config_hash=file_hash(settings.config_dir / "models.yaml"),
@@ -370,9 +406,13 @@ def main(
         validator=validator,
         retry=retry,
         user=user,
+        ablation=run_ablation,
     )
     users_path = settings.config_dir / "users.yaml"
-    output_dir = directory / "artifacts"
+    # Design note: runs on the published holdout go to a git-ignored folder under evals/runs.
+    # The alternative, `<suite>/artifacts` as for the other suites, would write into the
+    # published folder, which must stay exactly as committed.
+    output_dir = HOLDOUT_REGRESSION_DIR if on_published_holdout else directory / "artifacts"
     output_dir.mkdir(parents=True, exist_ok=True)
     baseline_path = output_dir / f"{setup.profile.name}_baseline.json"
     # Design note: --compare-to replaces the profile baseline file. The alternative, comparing
@@ -402,6 +442,7 @@ def main(
             users_path=users_path,
             user_override=user,
             retry=retry,
+            ablation=run_ablation,
         )
         results.extend(replace(result, repeat=repeat) for result in batch)
     report_path = output_dir / "latest.md"
@@ -409,6 +450,8 @@ def main(
     # The full per-question dump (SQL, messages) is for debugging and is not versioned.
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     tag = ("_validated" if validator else "") + ("_retry" if retry else "")
+    if run_ablation != "full":
+        tag += f"_{run_ablation}"
     dump = output_dir / f"{stamp}_{mode}_{info.profile}{tag}.json"
     # Do not label a run verified if sealed files changed while it ran.
     if suite == "holdout" and verify_commitment(directory, settings.db_path) != manifest_hash:
