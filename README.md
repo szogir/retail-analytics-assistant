@@ -342,6 +342,8 @@ This is a demo, not a production system.
   prompts that a model actually follows, so the backend block is exercised live.
 - More than one model family, with a paired analysis.
 - Column- and metric-level permissions; an API and a small UI on top of the CLI.
+- Atomic database regeneration (write to a temporary file, then rename), so an interrupted
+  run cannot leave a partial `data/retail.duckdb`.
 
 ## Documentation
 

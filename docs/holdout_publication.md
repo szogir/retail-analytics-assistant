@@ -94,7 +94,7 @@ not committing) and scan what would be published for words that must not appear:
 
 ```powershell
 git add evals/holdout_published evals/results/2026-10-05-holdout
-git grep --cached -n -i -E "codex|claude code|co-authored|generated with|c:\\users|@gmail|api[_-]?key|sk-ant" -- evals/holdout_published evals/results/2026-10-05-holdout
+git grep --cached -n -i -E "co-authored|generated with|c:\\users|@gmail|api[_-]?key|sk-ant" -- evals/holdout_published evals/results/2026-10-05-holdout
 ```
 
 No output means nothing was found. The model name `claude-haiku-4-5` in the run files is
@@ -106,7 +106,9 @@ what step 1 and 2 produced:
 git diff --cached --stat -- evals/holdout_published evals/results/2026-10-05-holdout
 ```
 
-Commit only when both the verification and the scan are clean.
+Then run the local pre-publication check.
+
+Commit only when the verification and both scans are clean.
 
 ### 5. Publish the database as a release attachment (fallback only)
 
