@@ -9,6 +9,7 @@ test, as regression data.
 import datetime as dt
 import hashlib
 import json
+import re
 from dataclasses import asdict
 from pathlib import Path
 
@@ -46,6 +47,21 @@ FROZEN_PROMPT_HASHES = {
 FROZEN_SCORING_HASH = "1056bb8f5c5fd44683dddbb78260560811c205ce3202117e20d70db4c8d69349"
 # A wide terminal, so the usage-error box does not wrap the message the tests look for.
 WIDE = {"COLUMNS": "300"}
+# ANSI escape sequences (colours, bold) and the box-drawing characters of rich's error panel.
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+BOX_DRAWING = re.compile(r"[\u2500-\u257f]")
+
+
+def plain_output(output: str) -> str:
+    """Return CLI output as plain text with single spaces.
+
+    Why: with GITHUB_ACTIONS=true, rich forces colours and draws the usage error in a box
+    whose border can split a message across lines. Searching this normalized text keeps the
+    tests independent of how the terminal output is rendered.
+    """
+    text = ANSI_ESCAPE.sub("", output)
+    text = BOX_DRAWING.sub(" ", text)
+    return " ".join(text.split())
 
 
 def sha256(text: str) -> str:
@@ -143,7 +159,7 @@ def test_cli_refuses_an_ablation_outside_the_semantic_mode() -> None:
         run_eval.app, ["--mode", "commented", "--ablation", "no_rules"]
     )
     assert result.exit_code == 2
-    assert "only defined for --mode semantic" in result.output
+    assert "only defined for --mode semantic" in plain_output(result.output)
 
 
 def test_cli_refuses_an_unknown_ablation() -> None:
@@ -163,7 +179,7 @@ def test_holdout_ablation_needs_the_published_folder_by_name(
     for extra in ([], ["--holdout-dir", str(tmp_path)]):
         result = CliRunner(env=WIDE).invoke(run_eval.app, [*base, *extra])
         assert result.exit_code == 2
-        assert "needs --holdout-dir evals/holdout_published" in result.output
+        assert "needs --holdout-dir evals/holdout_published" in plain_output(result.output)
 
 
 def test_the_holdout_still_refuses_backend_options_with_an_ablation() -> None:
