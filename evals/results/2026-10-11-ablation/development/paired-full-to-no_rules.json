@@ -1,0 +1,15 @@
+{
+  "comparison": "semantic[no_rules] minus semantic[full]",
+  "confirmatory": false,
+  "ablation_differs": [
+    "full",
+    "no_rules"
+  ],
+  "label": "DIAGNOSTIC (development suite): not confirmatory, no success-rule verdict",
+  "cases": 40,
+  "difference": -0.225,
+  "lower": -0.3375,
+  "upper": -0.12083333333333332,
+  "bootstrap_samples": 10000,
+  "seed": 42
+}

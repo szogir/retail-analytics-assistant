@@ -1,0 +1,6 @@
+fd4333e712f25bb1b151444bec9c801691b15fab
+git diff fd4333e --stat -- src evals semantic config: (empty)
+Run files carry no commit field. Evidence for this code state: empty diff and a clean
+tree on 2026-10-11, every run file written after the commit (2026-10-10 12:57:18 +0200),
+and prompt, config, scoring, schema, case and semantic-file hashes equal to Decision 23.
+Environment: duckdb 1.5.6, sqlglot 30.21.0, anthropic 1.11.0; data/retail.duckdb 741bd4c1...

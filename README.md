@@ -83,11 +83,55 @@ off) plus a 3-call probe that found no thinking block, not on a full proof
 ([Decision 18](docs/decisions.md#decision-18-cache-write-pricing-and-the-thinking-setting-of-the-model-comparison-2026-10-06),
 [Decision 20](docs/decisions.md#decision-20-model-comparison-claude_small-vs-claude_mid-2026-10-06)).
 
+### Ablation: which part of the layer does the work (diagnostic)
+
+Each variant leaves out parts of the semantic layer; everything else (prompt template, model,
+scoring) is unchanged. Semantic mode, `claude_small`, validator off, 3 repetitions. The
+development suite is dev-informed; the published holdout is spent, so it is regression data
+here, not a new confirmatory test. Variants, analysis and hypothesis were written down before
+the runs ([Decision 23](docs/decisions.md#decision-23-ablation-of-the-semantic-layer-preregistered-before-the-runs-2026-10-10)).
+
+| variant | rules | metrics + joins | examples | development | holdout | holdout, paired vs full |
+|---|---|---|---|---|---|---|
+| full | yes | yes | yes | 91.2% | 84.2% | |
+| no_examples | yes | yes | no | 83.8% | 72.8% | -11.4 pp (-23.2 to 0.0), borderline |
+| no_rules | no | yes | yes | 68.8% | 67.5% | -16.7 pp (-29.8 to -4.4) |
+| metrics_joins | no | yes | no | 57.5% | 46.5% | -37.7 pp (-51.8 to -23.7) |
+
+- **The rules list is the largest single part.** Without it the model reads "2025" as fiscal
+  year 2025 instead of the calendar year (fiscal-year failures: 0 to 21 questions on
+  development, 6 to 27 on holdout; 68 and 84 with the examples also removed).
+- **Metric definitions alone keep the classic traps closed.** Cancelled receipts, test stores,
+  VAT and currency conversion do not come back in any variant: each metric carries its formula
+  (net of VAT, converted to euro) and its mandatory filters.
+- **Part of the examples' effect is output format.** Without them the model rounds results
+  (`ROUND(x, 4)`), which fails the strict tolerance. Stripping only `ROUND()` in a diagnostic
+  re-grade of every variant narrows the gap to `full` from 18 to 4 questions on development and
+  from 26 to 11 on the holdout ([re-grade](evals/results/2026-10-11-ablation/round-regrade.md)):
+  almost all rounding on development, about half on the holdout. The primary numbers stay as
+  scored.
+- **Examples: borderline on the holdout.** The `no_examples` interval ends at 0.0, so on the
+  holdout the difference cannot be reliably distinguished from zero (development: -7.5 pp,
+  -13.3 to -2.5).
+- **Without rules and examples, the refusal of a mixed injection disappears.** In
+  `metrics_joins` on the holdout, case 149 (English, 3 of 3 repetitions) got an answer to its
+  net-sales part instead of the expected refusal; no instructions were revealed and the user may
+  see all stores. A contract violation (it did not refuse), not a data leak.
+- **The clarification hypothesis is not supported.** Removing the rules lowered the
+  asking-back rate on development (90% to 70%) and raised it by one question on the holdout
+  (40.5% to 42.9%): opposite directions.
+- The `full` re-run on the holdout gives 84.2% next to the confirmatory 86.0% (different
+  code state and configuration hash, not paired; 4 of 228 questions).
+
+Development paired differences, files and the reproducibility comparison:
+[`evals/results/2026-10-11-ablation/`](evals/results/2026-10-11-ablation/).
+
 ### Total API cost
 
-About **15 USD** for the whole project: 11.43 USD summed from the recorded development,
-security, model-comparison and retry run files, plus about 3.5 USD for the three held-out
-runs ([Decision 16](docs/decisions.md#decision-16-confirmatory-holdout-result-2026-10-05)).
+About **24 USD** for the whole project: 11.43 USD summed from the recorded development,
+security, model-comparison and retry run files, about 3.5 USD for the three held-out
+runs ([Decision 16](docs/decisions.md#decision-16-confirmatory-holdout-result-2026-10-05)),
+and 9.32 USD for the eight ablation runs.
 Runs made before cache writes got their own price are slightly under-priced
 ([Decision 18](docs/decisions.md#decision-18-cache-write-pricing-and-the-thinking-setting-of-the-model-comparison-2026-10-06)).
 
@@ -265,6 +309,10 @@ uv run python -m evals.run_eval --suite security --validator --mode semantic --p
 # Model comparison
 uv run python -m evals.run_eval --suite development --mode semantic --profile claude_mid --repetitions 3 --validator
 
+# Ablation (Decision 23): also no_rules, metrics_joins; the holdout needs the published folder
+uv run python -m evals.run_eval --suite development --mode semantic --profile claude_small --repetitions 3 --ablation no_examples
+uv run python -m evals.run_eval --suite holdout --holdout-dir evals/holdout_published --mode semantic --profile claude_small --repetitions 3 --ablation no_examples
+
 # Paired comparison of two runs (identical model and configuration required)
 uv run python -m evals.paired_analysis path/to/commented-run.json path/to/semantic-run.json
 ```
@@ -338,10 +386,10 @@ This is a demo, not a production system.
 - **No authentication.** `--user` is a role choice on the command line, not a login. In a real
   deployment the identity would come from single sign-on, and the backend layers would trust
   only that.
-- **The result measures the whole semantic package.** The semantic mode adds metrics, business
-  rules, join paths and verified examples at once. The comparison shows what the package does,
-  not how much each part contributes; separating them would need ablation runs that were not
-  made.
+- **The confirmatory result measures the whole semantic package.** The semantic mode adds
+  metrics, business rules, join paths and verified examples at once. The ablation that
+  separates them is diagnostic only: one model, the dev-informed development suite and the
+  already spent holdout, and the variant runs on the holdout were made on two days.
 - **One model family.** Only Claude models were measured, and the model comparison is
   diagnostic, not confirmatory.
 

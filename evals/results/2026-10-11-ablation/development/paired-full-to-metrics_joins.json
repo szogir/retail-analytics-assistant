@@ -1,0 +1,15 @@
+{
+  "comparison": "semantic[metrics_joins] minus semantic[full]",
+  "confirmatory": false,
+  "ablation_differs": [
+    "full",
+    "metrics_joins"
+  ],
+  "label": "DIAGNOSTIC (development suite): not confirmatory, no success-rule verdict",
+  "cases": 40,
+  "difference": -0.3375,
+  "lower": -0.45833333333333337,
+  "upper": -0.2166666666666667,
+  "bootstrap_samples": 10000,
+  "seed": 42
+}
